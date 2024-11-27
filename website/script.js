@@ -41,15 +41,23 @@ async function sendAlbumToServer(albumName, artistName) {
         artist: artistName,
     };
 
+    const requestOptions = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(albumData),
+    };
+
+    // Логируем полную информацию о запросе
+    console.log('POST: Метод:', requestOptions.method);
+    console.log('POST: URL:', apiUrl);
+    console.log('POST: Заголовки:', requestOptions.headers);
+    console.log('POST: Тело запроса:', JSON.parse(requestOptions.body));
+
     try {
-        // fetch используется для отправки HTTP-запроса.
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(albumData),
-        });
+        // fetch используется для отправки HTTP-запроса
+        const response = await fetch(apiUrl, requestOptions);
 
         if (!response.ok) {
             throw new Error(`Ошибка: ${response.status}`);
@@ -59,7 +67,7 @@ async function sendAlbumToServer(albumName, artistName) {
         console.log('Ответ от сервера:', data);
     } catch (error) {
         console.error('Ошибка при добавлении альбома:', error);
-        alert('Не удалось добавить альбом!');
+        alert('Не удалось добавить альбом на сервер!');
     }
 }
 

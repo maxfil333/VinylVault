@@ -35,4 +35,3 @@ def show_albums():
     return {"albums": [albums]}
 
 # GET: http://127.0.0.1:8000/albums
-
