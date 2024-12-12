@@ -1,13 +1,23 @@
-//----------------------------------------------------------------------------------------------------------------------
-// ПЕРЕМЕННЫЕ
+//----------------------------------------------------------------------------------------------------------- ПЕРЕМЕННЫЕ
 const albumInput = document.getElementById('album-input');
 const albumList = document.getElementById('album-list');
 const addAlbumBtn = document.getElementById('add-album-btn');
 
 
-//----------------------------------------------------------------------------------------------------------------------
-// Выделение альбома при наведении мыши
+//---------------------------------------------------------------------------------------------------------------- UTILS
+function logRequestDetails(method, url, headers, body) {
+    console.log(`${method}: Метод:`, method);
+    console.log(`${method}: URL:`, url);
+    console.log(`${method}: Заголовки:`, headers);
+    if (body) {
+        console.log(`${method}: Тело запроса:`, body);
+    }
+}
 
+
+//--------------------------------------------------------------------------------------------------- ВИЗУАЛЬНЫЕ ЭФФЕКТЫ
+
+// Выделение альбома при наведении мыши
 albumList.addEventListener('mouseover', (event) => {
     if (event.target.tagName === 'LI') {
         event.target.style.backgroundColor = '#f0f0f0';
@@ -21,20 +31,11 @@ albumList.addEventListener('mouseout', (event) => {
 });
 
 
-//----------------------------------------------------------------------------------------------------------------------
-// Удаление альбома по клику
+//--------------------------------------------------------------------------------------------------------------- СЕРВЕР
 
-albumList.addEventListener('click', (event) => {
-    if (event.target.tagName === 'LI') {
-        event.target.remove();
-    }
-});
-
-
-//----------------------------------------------------------------------------------------------------------------------
 const apiUrl = 'http://127.0.0.1:8000/albums/'; // URL FastAPI сервера
 
-// Функция отправки альбома на сервер ----------------------------------------------------------------------------------
+// Функция отправки альбома на сервер
 async function sendAlbumToServer(albumName, artistName) {
     const albumData = {
         name: albumName,
@@ -49,11 +50,7 @@ async function sendAlbumToServer(albumName, artistName) {
         body: JSON.stringify(albumData),
     };
 
-    // Логируем полную информацию о запросе
-    console.log('POST: Метод:', requestOptions.method);
-    console.log('POST: URL:', apiUrl);
-    console.log('POST: Заголовки:', requestOptions.headers);
-    console.log('POST: Тело запроса:', JSON.parse(requestOptions.body));
+    logRequestDetails('POST', apiUrl, requestOptions.headers, JSON.parse(requestOptions.body));
 
     try {
         // fetch используется для отправки HTTP-запроса
@@ -71,7 +68,44 @@ async function sendAlbumToServer(albumName, artistName) {
     }
 }
 
-// Функция добавления альбома ------------------------------------------------------------------------------------------
+
+// Функция удаления альбома с сервера
+async function deleteAlbumFromServer(albumName, artistName) {
+    const albumData = {
+        name: albumName,
+        artist: artistName,
+    };
+
+    const requestOptions = {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(albumData),
+    };
+
+    logRequestDetails('DELETE', apiUrl, requestOptions.headers, JSON.parse(requestOptions.body));
+
+    try {
+        // fetch используется для отправки HTTP-запроса
+        const response = await fetch(apiUrl, requestOptions);
+
+        if (!response.ok) {
+            throw new Error(`Ошибка: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('Ответ от сервера:', data);
+    } catch (error) {
+        console.error('Ошибка при удалении альбома:', error);
+        console.log('Не удалось удалить альбом с сервера!');
+    }
+}
+
+
+//------------------------------------------------------------------------------------------------------------- ОСНОВНЫЕ
+
+// Добавление альбома (DOM + СЕРВЕР)
 function addAlbum() {
     const albumName = albumInput.value.trim(); // Получаем текст из поля ввода
     if (albumName === '') {
@@ -95,5 +129,13 @@ function addAlbum() {
 addAlbumBtn.addEventListener('click', addAlbum);
 
 
+// Удаление альбома по клику (DOM + СЕРВЕР)
+albumList.addEventListener('click', (event) => {
+    if (event.target.tagName === 'LI') {
+        const albumName = event.target.textContent.trim(); // Получаем название альбома
+        event.target.remove(); // Удаляем элемент из списка
 
-
+        const artistName = 'Неизвестный исполнитель';
+        deleteAlbumFromServer(albumName, artistName); // Удаляем альбом на сервере
+    }
+});

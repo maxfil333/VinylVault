@@ -30,6 +30,12 @@ def add_album(album: Album):
     return {"message": "Альбом добавлен", "album": album}
 
 
+@app.delete("/albums/")
+def add_album(album: Album):
+    albums.remove(album)
+    return {"message": "Альбом удален", "album": album}
+
+
 @app.get("/albums/")
 def show_albums():
     return {"albums": [albums]}
