@@ -1,10 +1,12 @@
 //----------------------------------------------------------------------------------------------------------- ПЕРЕМЕННЫЕ
+
 const albumInput = document.getElementById('album-input');
 const albumList = document.getElementById('album-list');
 const addAlbumBtn = document.getElementById('add-album-btn');
 
 
 //---------------------------------------------------------------------------------------------------------------- UTILS
+
 function logRequestDetails(method, url, headers, body) {
     console.log(`${method}: Метод:`, method);
     console.log(`${method}: URL:`, url);
