@@ -141,3 +141,57 @@ albumList.addEventListener('click', (event) => {
         deleteAlbumFromServer(albumName, artistName); // Удаляем альбом на сервере
     }
 });
+
+
+// Получаем элементы поиска
+const albumSearchInput = document.getElementById('album-search');
+const searchAlbumBtn = document.getElementById('search-album-btn');
+const dropdownMenu = document.getElementById('dropdown-menu');
+const albumSearchList = document.getElementById('album-search-list');
+
+// --- Функция отображения выпадающего меню ---
+function showDropdown(options) {
+    dropdownMenu.innerHTML = ''; // Очищаем предыдущие варианты
+
+    options.forEach((option) => {
+        const item = document.createElement('div'); // Создаём элемент для варианта
+        item.textContent = option;
+        item.style.cursor = 'pointer';
+        item.addEventListener('click', () => {
+            // Когда выбираем вариант, добавляем его в список
+            const li = document.createElement('li');
+            li.textContent = option;
+            albumList.appendChild(li); // Добавляем в список
+            // Отправляем альбом на сервер (с фиктивным исполнителем)
+            const albumName = option;
+            const artistName = 'Неизвестный исполнитель';
+            sendAlbumToServer(albumName, artistName);
+
+            dropdownMenu.style.display = 'none'; // Скрываем меню после выбора
+        });
+        dropdownMenu.appendChild(item); // Добавляем элемент в меню
+    });
+
+    dropdownMenu.style.display = 'block'; // Показываем меню
+    dropdownMenu.style.left = `${albumSearchInput.offsetLeft}px`; // Позиция по горизонтали
+    dropdownMenu.style.top = `${albumSearchInput.offsetTop + albumSearchInput.offsetHeight}px`; // Позиция по вертикали
+}
+
+// --- Обработчик кнопки поиска ---
+searchAlbumBtn.addEventListener('click', () => {
+    const albumName = albumSearchInput.value.trim();
+    if (albumName === '') {
+        alert('Введите название альбома!');
+        return;
+    }
+
+    // Примерные варианты для выпадающего меню
+    const exampleOptions = [
+        `${albumName} + 1`,
+        `${albumName} + 2`,
+        `${albumName} + 3`,
+    ];
+
+    // Отображаем выпадающее меню
+    showDropdown(exampleOptions);
+});
