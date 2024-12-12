@@ -1,37 +1,21 @@
-import requests
-
 from src.config import API_KEY
+from src.utils import send_request
 
 
-def get_artist_info(artist_name, api_key):
+def get_artist_info(artist_name: str, api_key: str) -> dict:
     """
     Получить информацию об артисте из Last.fm API.
-
     :param artist_name: Имя артиста (str)
     :param api_key: API ключ Last.fm (str)
-    :return: Словарь с информацией об артисте или сообщение об ошибке.
+    :return: Словарь с информацией об артисте или сообщением об ошибке.
     """
-    url = "http://ws.audioscrobbler.com/2.0/"
     params = {
         "method": "artist.getinfo",
         "artist": artist_name,
         "api_key": api_key,
         "format": "json",
     }
-
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()  # Вызывает исключение для статусов ошибок HTTP
-
-        data = response.json()
-        if "error" in data:
-            return {"error": data["message"]}
-
-        artist_info = data.get("artist", {})
-        return artist_info
-
-    except requests.exceptions.RequestException as e:
-        return {"error": f"Ошибка запроса: {str(e)}"}
+    return send_request(params).get("artist", {})
 
 
 if __name__ == "__main__":
