@@ -67,7 +67,7 @@ async function sendAlbumToServer(albumName, artistName) {
         console.log('Ответ от сервера:', data);
     } catch (error) {
         console.error('Ошибка при добавлении альбома:', error);
-        alert('Не удалось добавить альбом на сервер!');
+        console.log('Не удалось добавить альбом на сервер!');
     }
 }
 
@@ -75,7 +75,6 @@ async function sendAlbumToServer(albumName, artistName) {
 function addAlbum() {
     const albumName = albumInput.value.trim(); // Получаем текст из поля ввода
     if (albumName === '') {
-        alert('Введите название альбома!');
         return;
     }
 
