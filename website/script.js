@@ -149,20 +149,24 @@ const searchAlbumBtn = document.getElementById('search-album-btn');
 const dropdownMenu = document.getElementById('dropdown-menu');
 const albumSearchList = document.getElementById('album-search-list');
 
-// --- Функция отображения выпадающего меню ---
-function showDropdown(options) {
+
+// --- Добавление альбома через поиск (DOM + СЕРВЕР) ---
+function addAlbumBySearch(options) {
     dropdownMenu.innerHTML = ''; // Очищаем предыдущие варианты
 
-    // для каждого элемента из выпадающего списка:
+    // для каждого элемента из выпадающего списка (найденные в результате поиска альбомы/исполнители):
     options.forEach((option) => {
-        const item = document.createElement('div');  // создаём контейнер для варианта;
+        const item = document.createElement('div');  // создаём контейнер для варианта (внутри dropdown);
         item.textContent = option;  // заполняем текст варианта;
         item.style.cursor = 'pointer';  // указываем стиль;
         item.addEventListener('click', () => {  // добавляем действие при клике:
 
             const li = document.createElement('li');  // создаем элемент списка;
             li.textContent = option;  // заполняем его textContent значением варианта;
-            albumList.appendChild(li); // добавляем элемент в список.
+            albumList.appendChild(li); // добавляем элемент в список (список альбомов).
+
+            // Очищаем поле ввода
+            albumSearchInput.value = '';
 
             // Отправляем альбом на сервер (с фиктивным исполнителем)
             const albumName = option;
@@ -185,14 +189,12 @@ searchAlbumBtn.addEventListener('click', () => {
     if (albumName === '') {
         return;
     }
-
     // Примерные варианты для выпадающего меню
     const exampleOptions = [
         `${albumName} + 1`,
         `${albumName} + 2`,
         `${albumName} + 3`,
     ];
-
     // Отображаем выпадающее меню
-    showDropdown(exampleOptions);
+    addAlbumBySearch(exampleOptions);
 });
