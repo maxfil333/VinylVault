@@ -153,15 +153,17 @@ const albumSearchList = document.getElementById('album-search-list');
 function showDropdown(options) {
     dropdownMenu.innerHTML = ''; // Очищаем предыдущие варианты
 
+    // для каждого элемента из выпадающего списка:
     options.forEach((option) => {
-        const item = document.createElement('div'); // Создаём элемент для варианта
-        item.textContent = option;
-        item.style.cursor = 'pointer';
-        item.addEventListener('click', () => {
-            // Когда выбираем вариант, добавляем его в список
-            const li = document.createElement('li');
-            li.textContent = option;
-            albumList.appendChild(li); // Добавляем в список
+        const item = document.createElement('div');  // создаём контейнер для варианта;
+        item.textContent = option;  // заполняем текст варианта;
+        item.style.cursor = 'pointer';  // указываем стиль;
+        item.addEventListener('click', () => {  // добавляем действие при клике:
+
+            const li = document.createElement('li');  // создаем элемент списка;
+            li.textContent = option;  // заполняем его textContent значением варианта;
+            albumList.appendChild(li); // добавляем элемент в список.
+
             // Отправляем альбом на сервер (с фиктивным исполнителем)
             const albumName = option;
             const artistName = 'Неизвестный исполнитель';
@@ -181,7 +183,6 @@ function showDropdown(options) {
 searchAlbumBtn.addEventListener('click', () => {
     const albumName = albumSearchInput.value.trim();
     if (albumName === '') {
-        alert('Введите название альбома!');
         return;
     }
 
