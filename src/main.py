@@ -1,6 +1,8 @@
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+
+from src.models import Album
+from src.album_info import album_search
 
 
 app = FastAPI()
@@ -14,11 +16,6 @@ app.add_middleware(
     allow_methods=["*"],  # Разрешить все методы
     allow_headers=["*"],  # Разрешить все заголовки
 )
-
-
-class Album(BaseModel):
-    name: str
-    artist: str
 
 
 albums = []
@@ -39,5 +36,11 @@ def add_album(album: Album):
 @app.get("/albums/")
 def show_albums():
     return {"albums": [albums]}
+
+
+@app.get("/albums/{album_name}")
+def search_album(album_name: str):
+    search_results = album_search(album_name)
+    return [{"name": x["name"], "artist": x["artist"]} for x in search_results]
 
 # GET: http://127.0.0.1:8000/albums
