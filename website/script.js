@@ -1,8 +1,9 @@
 //----------------------------------------------------------------------------------------------------------- ПЕРЕМЕННЫЕ
 
-const albumInput = document.getElementById('album-input');
 const albumList = document.getElementById('album-list');
-const addAlbumBtn = document.getElementById('add-album-btn');
+const albumSearchInput = document.getElementById('album-search');
+const dropdownMenu = document.getElementById('dropdown-menu');
+const searchAlbumBtn = document.getElementById('search-album-btn');
 
 
 //---------------------------------------------------------------------------------------------------------------- UTILS
@@ -107,30 +108,6 @@ async function deleteAlbumFromServer(albumName, artistName) {
 
 //------------------------------------------------------------------------------------------------------------- ОСНОВНЫЕ
 
-// Добавление альбома (DOM + СЕРВЕР)
-function addAlbum() {
-    const albumName = albumInput.value.trim(); // Получаем текст из поля ввода
-    if (albumName === '') {
-        return;
-    }
-
-    // Добавляем альбом локально
-    const li = document.createElement('li');
-    li.textContent = albumName;
-    albumList.appendChild(li);
-
-    // Очищаем поле ввода
-    albumInput.value = '';
-
-    // Отправляем альбом на сервер (с фиктивным исполнителем)
-    const artistName = 'Неизвестный исполнитель';
-    sendAlbumToServer(albumName, artistName);
-}
-
-// Обработчик нажатия на кнопку
-addAlbumBtn.addEventListener('click', addAlbum);
-
-
 // Удаление альбома по клику (DOM + СЕРВЕР)
 albumList.addEventListener('click', (event) => {
     if (event.target.tagName === 'LI') {
@@ -143,14 +120,7 @@ albumList.addEventListener('click', (event) => {
 });
 
 
-// Получаем элементы поиска
-const albumSearchInput = document.getElementById('album-search');
-const searchAlbumBtn = document.getElementById('search-album-btn');
-const dropdownMenu = document.getElementById('dropdown-menu');
-const albumSearchList = document.getElementById('album-search-list');
-
-
-// --- Добавление альбома через поиск (DOM + СЕРВЕР) ---
+// --- Добавление альбома при выборе варианта из выпадающего списка найденных альбомов  (DOM + СЕРВЕР) ---
 function addAlbumBySearch(options) {
     dropdownMenu.innerHTML = ''; // Очищаем предыдущие варианты
 
@@ -183,7 +153,8 @@ function addAlbumBySearch(options) {
     dropdownMenu.style.top = `${albumSearchInput.offsetTop + albumSearchInput.offsetHeight}px`; // Позиция по вертикали
 }
 
-// --- Обработчик кнопки поиска ---
+
+// --- Обработчик кнопки поиска searchAlbumBtn (Найти альбом) ---
 
 // PRESS ENTER
 albumSearchInput.addEventListener('keydown', function(event) {
