@@ -9,6 +9,15 @@
 <body>
 
 <h2>Ваши альбомы</h2>
+
+<div>
+    <input type="text" id="album-search" placeholder="Название альбома" />
+    <button id="search-album-btn">Найти альбом</button>
+    <div id="dropdown-menu" style="display: none; position: absolute; background-color: white; border: 1px solid #ccc; padding: 5px;">
+        <!-- Варианты для поиска появятся здесь -->
+    </div>
+</div>
+
 <div>
     <ul id="album-list">
         <li data-album-name="123123" data-artist-name="Savage Garden" style="">
@@ -18,14 +27,6 @@
         </li>
         <!-- Альбомы появятся здесь -->
     </ul>
-</div>
-
-<div>
-    <input type="text" id="album-search" placeholder="Название альбома" />
-    <button id="search-album-btn">Найти альбом</button>
-    <div id="dropdown-menu" style="display: none; position: absolute; background-color: white; border: 1px solid #ccc; padding: 5px;">
-        <!-- Варианты для поиска появятся здесь -->
-    </div>
 </div>
 
 <script src="script.js"></script>

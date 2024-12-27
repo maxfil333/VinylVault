@@ -1,3 +1,10 @@
+body {
+    border: 1px solid black; /* Граница вокруг альбома */
+    padding: 50px;
+    max-width: 80%;
+    margin: auto; /* Центрирование body по горизонтали */
+}
+
 #album-list {
     list-style: none;
     padding: 0;
