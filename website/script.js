@@ -184,6 +184,14 @@ function addAlbumBySearch(options) {
 }
 
 // --- Обработчик кнопки поиска ---
+
+// PRESS ENTER
+albumSearchInput.addEventListener('keydown', function(event) {
+    if (event.key === 'Enter') {
+        searchAlbumBtn.click();
+    }
+});
+
 searchAlbumBtn.addEventListener('click', () => {
     const albumName = albumSearchInput.value.trim();
     if (albumName === '') {
@@ -191,9 +199,13 @@ searchAlbumBtn.addEventListener('click', () => {
     }
 
     // Отправляем запрос на сервер для поиска альбомов
-    fetch(`${albumUrl}${albumName}`)
+    fetch(`${albumUrl}${encodeURIComponent(albumName)}`)
         .then(response => response.json())
         .then(data => {
+            if (data.length === 0) {
+                console.log('No albums found.');
+                return;
+            }
             const options = data.map(album => `${album.name} - ${album.artist}`);
             addAlbumBySearch(options);
         })
