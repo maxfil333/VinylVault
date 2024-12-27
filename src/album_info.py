@@ -1,8 +1,9 @@
 from src.config import API_KEY
-from utils import send_request
+from src.utils import send_request
+from pprint import pprint
 
 
-def get_album_info(artist_name: str, album_name: str, api_key: str) -> dict:
+def get_album_info(artist_name: str, album_name: str, api_key: str = API_KEY) -> dict:
     """
     Get album by album_name and artist_name
     :param artist_name: Имя артиста
@@ -20,7 +21,7 @@ def get_album_info(artist_name: str, album_name: str, api_key: str) -> dict:
     return send_request(params)
 
 
-def album_search(album_name: str, api_key: str, limit=5) -> list:
+def album_search(album_name: str, api_key: str = API_KEY, limit=5) -> list:
     """
     Get albums list by album_name
     :param album_name: Имя альбома
@@ -40,14 +41,13 @@ def album_search(album_name: str, api_key: str, limit=5) -> list:
 
 
 if __name__ == '__main__':
-    artist_name = "brutus"
+    artist_name = "Brutus"
     album_name = "Unison life"
 
     album_data = get_album_info(artist_name, album_name, API_KEY)
-    print(album_data)
+    pprint(album_data)
 
-    print('-'*30)
+    print('-' * 60)
 
     album_search_data = album_search(album_name, API_KEY, limit=5)
-    for alb in album_search_data:
-        print(alb)
+    pprint(album_search_data)
