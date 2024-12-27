@@ -35,7 +35,7 @@ albumList.addEventListener('mouseout', (event) => {
 
 //--------------------------------------------------------------------------------------------------------------- СЕРВЕР
 
-const apiUrl = 'http://127.0.0.1:8000/albums/'; // URL FastAPI сервера
+const albumUrl = 'http://127.0.0.1:8000/albums/'; // URL FastAPI сервера
 
 // Функция отправки альбома на сервер
 async function sendAlbumToServer(albumName, artistName) {
@@ -52,11 +52,11 @@ async function sendAlbumToServer(albumName, artistName) {
         body: JSON.stringify(albumData),
     };
 
-    logRequestDetails('POST', apiUrl, requestOptions.headers, JSON.parse(requestOptions.body));
+    logRequestDetails('POST', albumUrl, requestOptions.headers, JSON.parse(requestOptions.body));
 
     try {
         // fetch используется для отправки HTTP-запроса
-        const response = await fetch(apiUrl, requestOptions);
+        const response = await fetch(albumUrl, requestOptions);
 
         if (!response.ok) {
             throw new Error(`Ошибка: ${response.status}`);
@@ -86,11 +86,11 @@ async function deleteAlbumFromServer(albumName, artistName) {
         body: JSON.stringify(albumData),
     };
 
-    logRequestDetails('DELETE', apiUrl, requestOptions.headers, JSON.parse(requestOptions.body));
+    logRequestDetails('DELETE', albumUrl, requestOptions.headers, JSON.parse(requestOptions.body));
 
     try {
         // fetch используется для отправки HTTP-запроса
-        const response = await fetch(apiUrl, requestOptions);
+        const response = await fetch(albumUrl, requestOptions);
 
         if (!response.ok) {
             throw new Error(`Ошибка: ${response.status}`);
@@ -189,12 +189,15 @@ searchAlbumBtn.addEventListener('click', () => {
     if (albumName === '') {
         return;
     }
-    // Примерные варианты для выпадающего меню
-    const exampleOptions = [
-        `${albumName} + 1`,
-        `${albumName} + 2`,
-        `${albumName} + 3`,
-    ];
-    // Отображаем выпадающее меню
-    addAlbumBySearch(exampleOptions);
+
+    // Отправляем запрос на сервер для поиска альбомов
+    fetch(`${albumUrl}${albumName}`)
+        .then(response => response.json())
+        .then(data => {
+            const options = data.map(album => `${album.name} - ${album.artist}`);
+            addAlbumBySearch(options);
+        })
+        .catch(error => {
+            console.error('Ошибка при поиске альбомов:', error);
+        });
 });
