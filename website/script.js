@@ -131,11 +131,31 @@ function addAlbumBySearch(options) {
         item.style.cursor = 'pointer';  // указываем стиль;
         item.addEventListener('click', () => {  // добавляем действие при клике:
 
-            const li = document.createElement('li');  // создаем элемент списка
-            li.textContent = string_option;  // заполняем его textContent значением варианта
-            li.dataset.albumName = option.name  // добавляем параметр albumName
-            li.dataset.artistName = option.artist  // добавляем параметр artistName
-            albumList.appendChild(li); // добавляем элемент в список (список альбомов)
+            // Создаем элемент списка
+            const li = document.createElement('li');
+            li.dataset.albumName = option.name; // Добавляем параметр albumName
+            li.dataset.artistName = option.artist; // Добавляем параметр artistName
+
+            // Создаем внутренние элементы
+            const squareDiv = document.createElement('div');
+            squareDiv.className = 'album_list_square';
+
+            const albumDiv = document.createElement('div');
+            albumDiv.className = 'album_list_album';
+            albumDiv.textContent = option.name; // Название альбома
+
+            const artistDiv = document.createElement('div');
+            artistDiv.className = 'album_list_artist';
+            artistDiv.textContent = option.artist; // Имя исполнителя
+
+            // Добавляем внутренние элементы в li
+            li.appendChild(squareDiv);
+            li.appendChild(albumDiv);
+            li.appendChild(artistDiv);
+
+            // Находим ul и добавляем элемент списка
+            const albumList = document.getElementById('album-list');
+            albumList.appendChild(li);
 
             albumSearchInput.value = ''; // Очищаем поле ввода
 
