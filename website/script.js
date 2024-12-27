@@ -111,11 +111,10 @@ async function deleteAlbumFromServer(albumName, artistName) {
 // Удаление альбома по клику (DOM + СЕРВЕР)
 albumList.addEventListener('click', (event) => {
     if (event.target.tagName === 'LI') {
-        const albumName = event.target.textContent.trim(); // Получаем название альбома
-        event.target.remove(); // Удаляем элемент из списка
-
-        const artistName = 'Неизвестный исполнитель';
-        deleteAlbumFromServer(albumName, artistName); // Удаляем альбом на сервере
+        event.target.remove();  // Удаляем элемент из списка
+        const albumName = event.target.dataset.albumName;  // получаем название альбома
+        const artistName = event.target.dataset.artistName;  // получаем название артиста
+        deleteAlbumFromServer(albumName, artistName);  // Удаляем альбом на сервере
     }
 });
 
@@ -127,21 +126,20 @@ function addAlbumBySearch(options) {
     // для каждого элемента из выпадающего списка (найденные в результате поиска альбомы/исполнители):
     options.forEach((option) => {
         const item = document.createElement('div');  // создаём контейнер для варианта (внутри dropdown);
-        item.textContent = option;  // заполняем текст варианта;
+        const string_option = `${option.name} — ${option.artist}`;
+        item.textContent = string_option;  // заполняем текст варианта;
         item.style.cursor = 'pointer';  // указываем стиль;
         item.addEventListener('click', () => {  // добавляем действие при клике:
 
-            const li = document.createElement('li');  // создаем элемент списка;
-            li.textContent = option;  // заполняем его textContent значением варианта;
-            albumList.appendChild(li); // добавляем элемент в список (список альбомов).
+            const li = document.createElement('li');  // создаем элемент списка
+            li.textContent = string_option;  // заполняем его textContent значением варианта
+            li.dataset.albumName = option.name  // добавляем параметр albumName
+            li.dataset.artistName = option.artist  // добавляем параметр artistName
+            albumList.appendChild(li); // добавляем элемент в список (список альбомов)
 
-            // Очищаем поле ввода
-            albumSearchInput.value = '';
+            albumSearchInput.value = ''; // Очищаем поле ввода
 
-            // Отправляем альбом на сервер (с фиктивным исполнителем)
-            const albumName = option;
-            const artistName = 'Неизвестный исполнитель';
-            sendAlbumToServer(albumName, artistName);
+            sendAlbumToServer(option.name, option.artist); // Отправляем альбом на сервер
 
             dropdownMenu.style.display = 'none'; // Скрываем меню после выбора
         });
@@ -177,8 +175,7 @@ searchAlbumBtn.addEventListener('click', () => {
                 console.log('No albums found.');
                 return;
             }
-            const options = data.map(album => `${album.name} - ${album.artist}`);
-            addAlbumBySearch(options);
+            addAlbumBySearch(data);
         })
         .catch(error => {
             console.error('Ошибка при поиске альбомов:', error);
