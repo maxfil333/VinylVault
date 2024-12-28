@@ -47,7 +47,7 @@ if __name__ == '__main__':
     album_data = get_album_info(artist_name, album_name, API_KEY)
     pprint(album_data)
 
-    print('-' * 60)
+    print('-' * 70)
 
     album_search_data = album_search(album_name, API_KEY, limit=5)
     pprint(album_search_data)
