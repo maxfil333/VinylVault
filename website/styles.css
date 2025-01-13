@@ -1,0 +1,6 @@
+body {
+    background-image: url('back.jpg'); /* Путь к вашему изображению */
+    background-size: cover; /* Масштабирование изображения, чтобы покрыть весь экран */
+    background-repeat: no-repeat; /* Избегать повторов изображения */
+    background-position: center; /* Центрирование изображения */
+}
