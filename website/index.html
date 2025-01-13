@@ -12,10 +12,14 @@
     <h2 class="text-center">Ваши альбомы</h2>
 
     <div class="mb-3 position-relative">
-        <input type="text" id="album-search" class="form-control" placeholder="Название альбома" />
-        <button id="search-album-btn" class="btn btn-primary mt-2">Найти альбом</button>
-        <div id="dropdown-menu" class="dropdown-menu" style="display: none;">
-            <!-- Варианты для поиска появятся здесь -->
+        <div class="d-flex align-items-center">
+            <div class="position-relative flex-grow-1">
+                <input type="text" id="album-search" class="form-control" placeholder="Название альбома" />
+                <div id="dropdown-menu" class="dropdown-menu w-100" style="display: none; position: absolute; top: 100%; left: 0;">
+                    <!-- Варианты для поиска появятся здесь -->
+                </div>
+            </div>
+            <button id="search-album-btn" class="btn btn-primary ms-2" style="white-space: nowrap;">Найти</button>
         </div>
     </div>
 
