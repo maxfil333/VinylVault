@@ -1,34 +1,68 @@
 <!DOCTYPE html>
-<html>
+<html lang="ru">
 <head>
-  <title>VinylVault</title>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VinylVault</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
 
-<h2>Ваши альбомы</h2>
+<div class="container my-4">
+    <h2 class="text-center">Ваши альбомы</h2>
 
-<div>
-    <input type="text" id="album-search" placeholder="Название альбома" />
-    <button id="search-album-btn">Найти альбом</button>
-    <div id="dropdown-menu" style="display: none; position: absolute; background-color: white; border: 1px solid #ccc; padding: 5px;">
-        <!-- Варианты для поиска появятся здесь -->
+    <div class="mb-3 position-relative">
+        <input type="text" id="album-search" class="form-control" placeholder="Название альбома" />
+        <button id="search-album-btn" class="btn btn-primary mt-2">Найти альбом</button>
+        <div id="dropdown-menu" class="dropdown-menu" style="display: none;">
+            <!-- Варианты для поиска появятся здесь -->
+        </div>
+    </div>
+
+    <div>
+        <ul id="album-list" class="row list-unstyled">
+            <li class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4" data-album-name="Show Us Your Hits" data-artist-name="Bloodhound Gang">
+                <div class="card h-100">
+                    <div class="album_list_square card-img-top bg-secondary" style="height: 200px;"></div>
+                    <div class="card-body">
+                        <h5 class="album_list_album card-title">Show Us Your Hits</h5>
+                        <p class="album_list_artist card-text text-muted">Bloodhound Gang</p>
+                    </div>
+                </div>
+            </li>
+            <li class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4" data-album-name="Nevermind" data-artist-name="Nirvana">
+                <div class="card h-100">
+                    <div class="album_list_square card-img-top bg-secondary" style="height: 200px;"></div>
+                    <div class="card-body">
+                        <h5 class="album_list_album card-title">Nevermind</h5>
+                        <p class="album_list_artist card-text text-muted">Nirvana</p>
+                    </div>
+                </div>
+            </li>
+            <li class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4" data-album-name="Abbey Road" data-artist-name="The Beatles">
+                <div class="card h-100">
+                    <div class="album_list_square card-img-top bg-secondary" style="height: 200px;"></div>
+                    <div class="card-body">
+                        <h5 class="album_list_album card-title">Abbey Road</h5>
+                        <p class="album_list_artist card-text text-muted">The Beatles</p>
+                    </div>
+                </div>
+            </li>
+            <li class="col-12 col-sm-6 col-md-4 col-lg-3 mb-4" data-album-name="The Dark Side of the Moon" data-artist-name="Pink Floyd">
+                <div class="card h-100">
+                    <div class="album_list_square card-img-top bg-secondary" style="height: 200px;"></div>
+                    <div class="card-body">
+                        <h5 class="album_list_album card-title">The Dark Side of the Moon</h5>
+                        <p class="album_list_artist card-text text-muted">Pink Floyd</p>
+                    </div>
+                </div>
+            </li>
+            <!-- Добавь больше альбомов здесь -->
+        </ul>
     </div>
 </div>
 
-<div>
-    <ul id="album-list">
-        <li data-album-name="123123" data-artist-name="Savage Garden" style="">
-            <div class="album_list_square"></div>
-            <div class="album_list_album">Show Us Your Hits</div>
-            <div class="album_list_artist">Bloodhound Gang</div>
-        </li>
-        <!-- Альбомы появятся здесь -->
-    </ul>
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="script.js"></script>
 
 </body>
