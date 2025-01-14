@@ -1,4 +1,7 @@
 album_covers
+*.jpg
+*.jpeg
+*.png
 
 # Игнорировать каталоги и файлы конфигурации PyCharm
 .idea/

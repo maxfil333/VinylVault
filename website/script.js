@@ -20,16 +20,18 @@ function logRequestDetails(method, url, headers, body) {
 
 //--------------------------------------------------------------------------------------------------- ВИЗУАЛЬНЫЕ ЭФФЕКТЫ
 
-// Выделение альбома при наведении мыши
+// Эффект увеличения альбома при наведении мыши
 albumList.addEventListener('mouseover', (event) => {
-    if (event.target.tagName === 'LI') {
-        event.target.style.backgroundColor = '#f0f0f0';
+    const card = event.target.closest('.card');
+    if (card) {
+        card.style.transform = 'scale(1.05)';
     }
 });
 
 albumList.addEventListener('mouseout', (event) => {
-    if (event.target.tagName === 'LI') {
-        event.target.style.backgroundColor = ''; // Возвращаем оригинальный цвет
+    const card = event.target.closest('.card');
+    if (card) {
+        card.style.transform = 'scale(1)';
     }
 });
 
