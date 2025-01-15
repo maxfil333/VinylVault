@@ -40,7 +40,7 @@ albumList.addEventListener('mouseout', (event) => {
 
 const albumUrl = 'http://127.0.0.1:8000/albums/'; // URL FastAPI сервера
 
-// Функция отправки альбома на сервер
+// Функция отправки альбома на сервер ( @app.post("/albums/") )
 async function sendAlbumToServer(albumName, artistName) {
     const albumData = {
         name: albumName,
@@ -74,7 +74,7 @@ async function sendAlbumToServer(albumName, artistName) {
 }
 
 
-// Функция удаления альбома с сервера
+// Функция удаления альбома с сервера ( @app.delete("/albums/") )
 async function deleteAlbumFromServer(albumName, artistName) {
     const albumData = {
         name: albumName,
@@ -121,50 +121,65 @@ albumList.addEventListener('click', (event) => {
 });
 
 
-// --- Добавление альбома при выборе варианта из выпадающего списка найденных альбомов  (DOM + СЕРВЕР) ---
-function addAlbumBySearch(options) {
+// Добавление альбома на витрину при выборе варианта из выпадающего списка найденных альбомов  (DOM + СЕРВЕР)
+function addAlbumBySearch(data) {
     dropdownMenu.innerHTML = ''; // Очищаем предыдущие варианты
 
+    // data = [{'artist1': .., 'name1': ..}, {'artist2': .., 'name2': ..}]
     // для каждого элемента из выпадающего списка (найденные в результате поиска альбомы/исполнители):
-    options.forEach((option) => {
+    data.forEach((option) => {
         const item = document.createElement('div');  // создаём контейнер для варианта (внутри dropdown);
-        const string_option = `${option.name} — ${option.artist}`;
-        item.textContent = string_option;  // заполняем текст варианта;
+        item.textContent = `${option.name} — ${option.artist}`;  // заполняем текст варианта;
         item.style.cursor = 'pointer';  // указываем стиль;
-        item.addEventListener('click', () => {  // добавляем действие при клике:
+
+        // добавляем действие при клике:
+        item.addEventListener('click', () => {
 
             // Создаем элемент списка
             const li = document.createElement('li');
+            li.className = 'col-12 col-sm-6 col-md-4 col-lg-3 mb-2';
             li.dataset.albumName = option.name; // Добавляем параметр albumName
             li.dataset.artistName = option.artist; // Добавляем параметр artistName
 
             // Создаем внутренние элементы
-            const squareDiv = document.createElement('div');
-            squareDiv.className = 'album_list_square';
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'card h-100';
 
-            const albumDiv = document.createElement('div');
-            albumDiv.className = 'album_list_album';
-            albumDiv.textContent = option.name; // Название альбома
+            const img = document.createElement('img');
+            img.src = "../album_covers/f5c92e4631380f961ba28fe38740d7cb.png";
+            img.className = 'album_list_square card-img-top';
+            img.alt = option.name;
 
-            const artistDiv = document.createElement('div');
-            artistDiv.className = 'album_list_artist';
-            artistDiv.textContent = option.artist; // Имя исполнителя
+            const cardBody = document.createElement('div');
+            cardBody.className = 'card-body';
 
-            // Добавляем внутренние элементы в li
-            li.appendChild(squareDiv);
-            li.appendChild(albumDiv);
-            li.appendChild(artistDiv);
+            const badge = document.createElement('span');
+            badge.className = 'badge';
+            badge.style.backgroundColor = '';
+            badge.textContent = '';
 
-            // Находим ul и добавляем элемент списка
-            const albumList = document.getElementById('album-list');
-            albumList.appendChild(li);
+            const albumTitle = document.createElement('h5');
+            albumTitle.className = 'album_list_album card-title';
+            albumTitle.textContent = option.name;
 
+            const artistText = document.createElement('p');
+            artistText.className = 'album_list_artist card-text text-muted';
+            artistText.textContent = option.artist;
+
+            // Структурируем элементы
+            cardBody.appendChild(badge);
+            cardBody.appendChild(albumTitle);
+            cardBody.appendChild(artistText);
+            cardDiv.appendChild(img);
+            cardDiv.appendChild(cardBody);
+            li.appendChild(cardDiv);
+
+            albumList.appendChild(li); // Добавляем в список
             albumSearchInput.value = ''; // Очищаем поле ввода
-
-            sendAlbumToServer(option.name, option.artist); // Отправляем альбом на сервер
-
+            sendAlbumToServer(option.name, option.artist); // Отправляем альбом на сервер !!!
             dropdownMenu.style.display = 'none'; // Скрываем меню после выбора
         });
+
         dropdownMenu.appendChild(item); // Добавляем элемент в меню
     });
 
@@ -197,7 +212,7 @@ searchAlbumBtn.addEventListener('click', () => {
                 console.log('No albums found.');
                 return;
             }
-            addAlbumBySearch(data);
+            addAlbumBySearch(data);  // data = [{'artist1': .., 'name1': ..}, {'artist2': .., 'name2': ..}]
         })
         .catch(error => {
             console.error('Ошибка при поиске альбомов:', error);
