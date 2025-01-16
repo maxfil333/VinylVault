@@ -38,7 +38,8 @@ albumList.addEventListener('mouseout', (event) => {
 
 //--------------------------------------------------------------------------------------------------------------- СЕРВЕР
 
-const albumUrl = 'http://127.0.0.1:8000/albums/'; // URL FastAPI сервера
+const serverAddress = 'http://127.0.0.1:8000/'; // URL FastAPI сервера
+const albumsUrl = serverAddress + 'albums/';
 
 // Функция отправки альбома на сервер ( @app.post("/albums/") )
 async function sendAlbumToServer(albumName, artistName) {
@@ -55,11 +56,11 @@ async function sendAlbumToServer(albumName, artistName) {
         body: JSON.stringify(albumData),
     };
 
-    logRequestDetails('POST', albumUrl, requestOptions.headers, JSON.parse(requestOptions.body));
+    logRequestDetails('POST', albumsUrl, requestOptions.headers, JSON.parse(requestOptions.body));
 
     try {
         // fetch используется для отправки HTTP-запроса
-        const response = await fetch(albumUrl, requestOptions);
+        const response = await fetch(albumsUrl, requestOptions);
 
         if (!response.ok) {
             throw new Error(`Ошибка: ${response.status}`);
@@ -89,16 +90,13 @@ async function deleteAlbumFromServer(albumName, artistName) {
         body: JSON.stringify(albumData),
     };
 
-    logRequestDetails('DELETE', albumUrl, requestOptions.headers, JSON.parse(requestOptions.body));
+    logRequestDetails('DELETE', albumsUrl, requestOptions.headers, JSON.parse(requestOptions.body));
 
     try {
-        // fetch используется для отправки HTTP-запроса
-        const response = await fetch(albumUrl, requestOptions);
-
+        const response = await fetch(albumsUrl, requestOptions);
         if (!response.ok) {
             throw new Error(`Ошибка: ${response.status}`);
         }
-
         const data = await response.json();
         console.log('Ответ от сервера:', data);
     } catch (error) {
@@ -146,7 +144,7 @@ function addAlbumBySearch(data) {
             cardDiv.className = 'card h-100';
 
             const img = document.createElement('img');
-            img.src = "../album_covers/f5c92e4631380f961ba28fe38740d7cb.png";
+            img.src = option.image.slice(-1)[0]['#text'];
             img.className = 'album_list_square card-img-top';
             img.alt = option.name;
 
@@ -205,7 +203,7 @@ searchAlbumBtn.addEventListener('click', () => {
     }
 
     // Отправляем запрос на сервер для поиска альбомов
-    fetch(`${albumUrl}${encodeURIComponent(albumName)}`)
+    fetch(`${albumsUrl}${encodeURIComponent(albumName)}`)
         .then(response => response.json())
         .then(data => {
             if (data.length === 0) {
