@@ -135,7 +135,7 @@ function addAlbumBySearch(data) {
 
             // Создаем элемент списка
             const li = document.createElement('li');
-            li.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
+            li.className = 'col-6 col-sm-6 col-md-4 col-lg-3';
             li.dataset.albumName = option.name; // Добавляем параметр albumName
             li.dataset.artistName = option.artist; // Добавляем параметр artistName
 
