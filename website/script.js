@@ -135,7 +135,7 @@ function addAlbumBySearch(data) {
 
             // Создаем элемент списка
             const li = document.createElement('li');
-            li.className = 'col-12 col-sm-6 col-md-4 col-lg-3 mb-2';
+            li.className = 'col-12 col-sm-6 col-md-4 col-lg-3';
             li.dataset.albumName = option.name; // Добавляем параметр albumName
             li.dataset.artistName = option.artist; // Добавляем параметр artistName
 
@@ -144,17 +144,12 @@ function addAlbumBySearch(data) {
             cardDiv.className = 'card h-100';
 
             const img = document.createElement('img');
-            img.src = option.image.slice(-1)[0]['#text'];
+            img.src = option.image.slice(-1)[0]['#text'] || 'data/other/unfound.jpg';
             img.className = 'album_list_square card-img-top';
             img.alt = option.name;
 
             const cardBody = document.createElement('div');
             cardBody.className = 'card-body';
-
-            const badge = document.createElement('span');
-            badge.className = 'badge';
-            badge.style.backgroundColor = '';
-            badge.textContent = '';
 
             const albumTitle = document.createElement('h5');
             albumTitle.className = 'album_list_album card-title';
@@ -165,7 +160,6 @@ function addAlbumBySearch(data) {
             artistText.textContent = option.artist;
 
             // Структурируем элементы
-            cardBody.appendChild(badge);
             cardBody.appendChild(albumTitle);
             cardBody.appendChild(artistText);
             cardDiv.appendChild(img);
