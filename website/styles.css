@@ -16,3 +16,13 @@ body::before {
 .card {
     transition: transform 0.1s ease-in-out; /* Устанавливаем плавный переход */
 }
+
+.album_list_album.card-title {
+    overflow: hidden; /* Скрываем лишний текст */
+    display: -webkit-box; /* Для создания контейнера flex с ограничением линий */
+    -webkit-line-clamp: 1; /* Ограничиваем количество строк до двух */
+    -webkit-box-orient: vertical; /* Вертикальная ориентация для ограничения строк */
+    text-overflow: ellipsis; /* Добавляем многоточие в конце обрезанного текста */
+    word-break: break-word; /* Переносим длинные слова, если нужно */
+    word-break: break-all; /* Разрешаем разрывать слова */
+}
