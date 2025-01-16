@@ -5,7 +5,7 @@ from urllib.parse import urlparse
 from src.config import API_KEY
 
 
-def get_artist_albums(artist_name, api_key):
+def get_artist_albums(artist_name, api_key) -> dict:
     """
     Получить список альбомов артиста с обложками.
 
@@ -31,42 +31,52 @@ def get_artist_albums(artist_name, api_key):
             return {"error": data["message"]}
 
         albums = data.get("topalbums", {}).get("album", [])
-        return [{"name": album["name"], "image": album["image"][-1]["#text"]} for album in albums if
-                album["image"][-1]["#text"]]
+
+        result = []
+        for album in albums:
+            result.append({'album_name': album["name"],
+                           'image_link_main': album["image"][-1]["#text"],
+                           'image_link_reserve': album["image"][-2]["#text"]})
+        return {"result": result}
 
     except requests.exceptions.RequestException as e:
         return {"error": f"Ошибка запроса: {str(e)}"}
 
 
-def download_images(album_list, output_dir):
+def download_by_link(link: str, output_dir: str) -> None:
+    response = requests.get(link, stream=True)
+    response.raise_for_status()
+    file_name = os.path.join(output_dir, os.path.basename(urlparse(link).path))
+    with open(file_name, "wb") as file:
+        for chunk in response.iter_content(1024):
+            file.write(chunk)
+    print(f"Скачано: {file_name}")
+
+
+def download_images(albums, output_dir) -> None:
     """
     Скачивает изображения альбомов в указанную директорию.
 
-    :param album_list: Список альбомов с обложками (list)
+    :param albums: {'result': `Список альбомов с обложками (list)`}
     :param output_dir: Директория для сохранения изображений (str)
     """
+
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
 
-    for album in album_list:
-        image_url = album["image"]
-        if not image_url:
-            continue
+    for album in albums['result']:
+        image_link_main = album["image_link_main"]
+        image_link_reserve = album["image_link_reserve"]
 
         try:
-            # Определяем имя файла
-            file_name = os.path.join(output_dir, os.path.basename(urlparse(image_url).path))
-            # Скачиваем изображение
-            response = requests.get(image_url, stream=True)
-            response.raise_for_status()
-
-            with open(file_name, "wb") as file:
-                for chunk in response.iter_content(1024):
-                    file.write(chunk)
-            print(f"Скачано: {file_name}")
-
+            download_by_link(image_link_main, output_dir)
         except requests.exceptions.RequestException as e:
-            print(f"Ошибка скачивания {image_url}: {str(e)}")
+            print(f"Ошибка скачивания {image_link_main}: {str(e)}")
+            print(f"Попытка скачивания резервного изображения...")
+            try:
+                download_by_link(image_link_reserve, output_dir)
+            except requests.exceptions.RequestException as e:
+                print(f"Ошибка скачивания резервного изображения {image_link_main}: {str(e)}")
 
 
 if __name__ == "__main__":
