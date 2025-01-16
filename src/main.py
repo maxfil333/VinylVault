@@ -28,7 +28,7 @@ def add_album(album: Album):
 
 
 @app.delete("/albums/")
-def add_album(album: Album):
+def delete_album(album: Album):
     albums.remove(album)
     return {"message": "Альбом удален", "album": album}
 
@@ -41,6 +41,4 @@ def show_albums():
 @app.get("/albums/{album_name}")
 def search_album(album_name: str):
     search_results = album_search(album_name)
-    return [{"name": x["name"], "artist": x["artist"]} for x in search_results]
-
-# GET: http://127.0.0.1:8000/albums
+    return [{"name": x["name"], "artist": x["artist"], "image": x["image"]} for x in search_results]
