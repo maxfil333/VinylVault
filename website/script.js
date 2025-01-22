@@ -143,10 +143,24 @@ function addAlbumBySearch(data) {
             const cardDiv = document.createElement('div');
             cardDiv.className = 'card h-100';
 
+            // Контейнер изображения
+            const imageContainer = document.createElement('div');
+            imageContainer.className = 'image-container'; // Используем класс для фона-заполнителя
+
             const img = document.createElement('img');
             img.src = option.image.slice(-1)[0]['#text'] || 'data/other/unfound.jpg';
             img.className = 'album_list_square card-img-top';
             img.alt = option.name;
+
+            // Обработчики событий
+            img.onload = () => {
+                img.style.opacity = '1'; // Показываем изображение после загрузки
+            };
+            img.onerror = () => {
+                img.style.display = 'none'; // Скрываем изображение в случае ошибки
+            };
+
+            imageContainer.appendChild(img);
 
             const cardBody = document.createElement('div');
             cardBody.className = 'card-body';
@@ -162,7 +176,7 @@ function addAlbumBySearch(data) {
             // Структурируем элементы
             cardBody.appendChild(albumTitle);
             cardBody.appendChild(artistText);
-            cardDiv.appendChild(img);
+            cardDiv.appendChild(imageContainer);
             cardDiv.appendChild(cardBody);
             li.appendChild(cardDiv);
 

@@ -14,6 +14,7 @@ body::before {
 }
 
 .card {
+    overflow: hidden; /* Скрывает всё, что выходит за границы */
     transition: transform 0.1s ease-in-out; /* Устанавливаем плавный переход */
 }
 
@@ -25,4 +26,26 @@ body::before {
     text-overflow: ellipsis; /* Добавляем многоточие в конце обрезанного текста */
     word-break: break-word; /* Переносим длинные слова, если нужно */
     word-break: break-all; /* Разрешаем разрывать слова */
+}
+
+.image-container {
+    position: relative;
+    width: 100%;
+    padding-top: 100%; /* Делает контейнер квадратным */
+    background-image: url('data/other/loading.jpg'); /* Фоновое изображение */
+    background-size: cover;
+    background-position: center;
+    overflow: hidden;
+}
+
+/* Скрытие изображения до загрузки */
+.image-container img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0; /* Прозрачное до загрузки */
+    transition: opacity 0.9s ease; /* Анимация появления */
 }
