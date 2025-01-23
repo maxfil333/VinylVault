@@ -34,7 +34,7 @@ def get_collection(db: Database, collection_name) -> Collection:
 
 
 def add_user(collection: Collection, user: User) -> InsertOneResult:
-    return collection.insert_one(user.model_dump())
+    return collection.insert_one(user.model_dump(by_alias=True))
 
 
 def vinyl_vault_users() -> Collection:
