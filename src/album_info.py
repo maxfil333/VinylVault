@@ -21,13 +21,13 @@ def get_album_info(artist_name: str, album_name: str, api_key: str = API_KEY) ->
     return send_request(params)
 
 
-def album_search(album_name: str, api_key: str = API_KEY, limit=5) -> list:
+def album_search(album_name: str, api_key: str = API_KEY, limit=5) -> list[dict]:
     """
     Get albums list by album_name
     :param album_name: Имя альбома
     :param api_key: API ключ Last.fm
     :param limit: Количество результатов
-    :return: Словарь с информацией об альбоме или сообщением об ошибке.
+    :return: Список словарей с информацией об альбоме или сообщением об ошибке.
     """
 
     params = {
