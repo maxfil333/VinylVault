@@ -2,10 +2,11 @@ from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo.collection import Collection
+from pydantic import ValidationError
 
-from src.models import Album
+from src.models import Album, User
 from src.album_info import album_search
-from src.database import vinyl_vault_users
+from src.database import vinyl_vault_users, add_user
 
 
 app = FastAPI()
@@ -52,8 +53,11 @@ vinyl_vault_users_dependency = Annotated[Collection, Depends(vinyl_vault_users)]
 @app.post("/register/")
 async def register_user(username: str, password: str, users_collection: vinyl_vault_users_dependency):
     if users_collection.find_one({"username": username}):
-        raise HTTPException(status_code=400, detail="User already exists")
+        raise HTTPException(status_code=409, detail="User already exists")
 
-    user = {"username": username, "password": password}
-    users_collection.insert_one(user)
+    try:
+        add_user(users_collection, User(**{"username": username, "password": password}))
+    except ValidationError as e:
+        raise HTTPException(status_code=400, detail=f"User data is invalid: {e}")
+
     return {"message": "User registered successfully"}
