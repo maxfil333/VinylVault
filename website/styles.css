@@ -13,6 +13,10 @@ body::before {
     z-index: -1; /* Переместить псевдоэлемент на задний план */
 }
 
+body.login-page::before {
+    background-image: none;
+}
+
 .card {
     overflow: hidden; /* Скрывает всё, что выходит за границы */
     transition: transform 0.1s ease-in-out; /* Устанавливаем плавный переход */
