@@ -3,6 +3,7 @@ from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pymongo.collection import Collection
 from pydantic import ValidationError
 
@@ -79,3 +80,5 @@ async def welcome_page():
 async def login_page():
     content = load_html("login.html", WEBSITE_DIR)
     return HTMLResponse(content=content)
+
+app.mount("/static", StaticFiles(directory=WEBSITE_DIR), name="static")
