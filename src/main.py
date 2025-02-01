@@ -1,16 +1,22 @@
+import os
 from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pymongo.collection import Collection
 from pydantic import ValidationError
 
 from src.models import Album, User
 from src.album_info import album_search
 from src.database import vinyl_vault_users, add_user
+from src.utils import load_html
 
 
 app = FastAPI()
 # uvicorn src.main:app --reload
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+WEBSITE_DIR = os.path.join(BASE_DIR, "..", "website")
 
 
 app.add_middleware(
@@ -61,3 +67,15 @@ async def register_user(username: str, password: str, users_collection: vinyl_va
         raise HTTPException(status_code=400, detail=f"User data is invalid: {e}")
 
     return {"message": "User registered successfully"}
+
+
+@app.get("/welcome", response_class=HTMLResponse)
+async def welcome_page():
+    content = load_html("welcome.html", WEBSITE_DIR)
+    return HTMLResponse(content=content)
+
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    content = load_html("login.html", WEBSITE_DIR)
+    return HTMLResponse(content=content)
