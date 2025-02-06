@@ -17,6 +17,14 @@ body.login-page::before {
     background-image: none;
 }
 
+.no-select {
+    -webkit-user-select: none; /* для Safari */
+    -moz-user-select: none;    /* для Firefox */
+    -ms-user-select: none;     /* для IE/Edge */
+    user-select: none;         /* стандартное свойство */
+}
+
+
 .card {
     overflow: hidden; /* Скрывает всё, что выходит за границы */
     transition: transform 0.1s ease-in-out; /* Устанавливаем плавный переход */
