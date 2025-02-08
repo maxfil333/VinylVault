@@ -1,11 +1,11 @@
 import os
 from typing import Annotated
-from fastapi import FastAPI, Depends, HTTPException
+from fastapi import FastAPI, Depends, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pymongo.collection import Collection
-from pydantic import ValidationError
+from pydantic import ValidationError, EmailStr
 
 from src.models import Album, User
 from src.album_info import album_search
@@ -57,22 +57,54 @@ def search_album(album_name: str):
 vinyl_vault_users_dependency = Annotated[Collection, Depends(vinyl_vault_users)]
 
 
-@app.post("/register/")
-async def register_user(username: str, password: str, users_collection: vinyl_vault_users_dependency):
-    if users_collection.find_one({"username": username}):
-        raise HTTPException(status_code=409, detail="User already exists")
+@app.post("/register")
+async def register(username: str = Form(...), password: str = Form(...), email: EmailStr = Form(...)):
+    """
+    Обработчик регистрации.
+    Принимает данные из HTML-формы и добавляет нового пользователя в базу данных.
+    """
+    user = User(username=username, password=password, email=email)
 
     try:
-        add_user(users_collection, User(**{"username": username, "password": password}))
-    except ValidationError as e:
-        raise HTTPException(status_code=400, detail=f"User data is invalid: {e}")
+        result = add_user(vinyl_vault_users(), user)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка при регистрации пользователя: {e}")
 
-    return {"message": "User registered successfully"}
+    return {
+        "message": "Пользователь успешно зарегистрирован",
+        "user_id": user.id  # либо result.inserted_id
+    }
 
+
+@app.post("/login")
+async def register(username: str = Form(...), password: str = Form(...)):
+    """
+    Обработчик логина.
+    Принимает данные из HTML-формы и возвращает пользователя из базы данных.
+    """
+
+    try:
+        data = {"username": username, "password":  password}
+        result = vinyl_vault_users().find_one(data)
+        if result:
+            return result
+        else:
+            HTTPException(status_code=401, detail="Invalid login or password")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Ошибка при регистрации пользователя: {e}")
+
+
+# ________________________ HTMLResponse ________________________
 
 @app.get("/welcome", response_class=HTMLResponse)
 async def welcome_page():
     content = load_html("welcome.html", WEBSITE_DIR)
+    return HTMLResponse(content=content)
+
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page():
+    content = load_html("register.html", WEBSITE_DIR)
     return HTMLResponse(content=content)
 
 
