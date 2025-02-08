@@ -5,20 +5,18 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 from pymongo.collection import Collection
-from pydantic import ValidationError, EmailStr
+from pydantic import EmailStr
 
 from src.models import Album, User
 from src.album_info import album_search
-from src.database import vinyl_vault_users, add_user
+from src.database import vinyl_vault_users, add_user, is_in_collection
 from src.utils import load_html
-
 
 app = FastAPI()
 # uvicorn src.main:app --reload
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 WEBSITE_DIR = os.path.join(BASE_DIR, "..", "website")
-
 
 app.add_middleware(
     CORSMiddleware,
@@ -54,38 +52,36 @@ def search_album(album_name: str):
     return [{"name": x["name"], "artist": x["artist"], "image": x["image"]} for x in search_results]
 
 
-vinyl_vault_users_dependency = Annotated[Collection, Depends(vinyl_vault_users)]
+users_collection_dependency = Annotated[Collection, Depends(vinyl_vault_users)]
 
 
 @app.post("/register")
-async def register(username: str = Form(...), password: str = Form(...), email: EmailStr = Form(...)):
-    """
-    Обработчик регистрации.
-    Принимает данные из HTML-формы и добавляет нового пользователя в базу данных.
-    """
-    user = User(username=username, password=password, email=email)
+async def register(users_collection: users_collection_dependency,
+                   username: str = Form(...), password: str = Form(...), email: EmailStr = Form(...)):
+    """ Обработчик регистрации. Принимает данные из HTML-формы и добавляет нового пользователя в базу данных. """
 
     try:
-        result = add_user(vinyl_vault_users(), user)
+        user = User(username=username, password=password, email=email)
+        if is_in_collection(field='username', value=user.username, collection=users_collection):
+            raise HTTPException(status_code=409, detail="User already exists")
+        add_user(users_collection, user)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при регистрации пользователя: {e}")
 
     return {
         "message": "Пользователь успешно зарегистрирован",
-        "user_id": user.id  # либо result.inserted_id
+        "user_id": user.id
     }
 
 
 @app.post("/login")
-async def register(username: str = Form(...), password: str = Form(...)):
-    """
-    Обработчик логина.
-    Принимает данные из HTML-формы и возвращает пользователя из базы данных.
-    """
+async def register(users_collection: users_collection_dependency,
+                   username: str = Form(...), password: str = Form(...)):
+    """ Обработчик логина. Принимает данные из HTML-формы и возвращает пользователя из базы данных. """
 
     try:
-        data = {"username": username, "password":  password}
-        result = vinyl_vault_users().find_one(data)
+        data = {"username": username, "password": password}
+        result = users_collection.find_one(data)
         if result:
             return result
         else:
@@ -112,5 +108,6 @@ async def register_page():
 async def login_page():
     content = load_html("login.html", WEBSITE_DIR)
     return HTMLResponse(content=content)
+
 
 app.mount("/static", StaticFiles(directory=WEBSITE_DIR), name="static")
