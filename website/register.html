@@ -13,14 +13,17 @@
 
 <div class="d-flex justify-content-center align-items-center vh-100">
     <div class="container" style="max-width: 500px">
-        <h2 class="text-center text-danger no-select" style="font-family: Barlow;">Login</h2>
+        <h2 class="text-center text-danger no-select" style="font-family: Barlow;">Create your account</h2>
 
-        <form action="http://127.0.0.1:8000/login" method="POST">
+        <form action="http://127.0.0.1:8000/register" method="POST">
             <div class="form-group">
                 <input type="text" class="form-control mb-2" name="username" placeholder="Username">
             </div>
             <div class="form-group">
                 <input type="password" class="form-control mb-2" name="password" placeholder="Password">
+            </div>
+            <div class="form-group">
+                <input type="email" class="form-control mb-2" name="email" aria-describedby="emailHelp" placeholder="Email">
             </div>
         <button type="submit" class="btn btn-primary">Submit</button>
         </form>
