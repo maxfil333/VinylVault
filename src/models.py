@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from bson import ObjectId  # id для Mongo
 
 
@@ -13,6 +13,7 @@ class User(BaseModel):
     id: str = Field(default_factory=lambda: str(ObjectId()), alias="_id")
     username: str
     password: str  # Хэшированный пароль
+    email: EmailStr
     albums: list[Album] = []
 
 
