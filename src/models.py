@@ -14,11 +14,11 @@ class User(BaseModel):
     username: str
     password: str  # Хэшированный пароль
     email: EmailStr
-    albums: list[Album] = []
+    albums: list[Album] = Field(default_factory=list)
 
 
 if __name__ == '__main__':
-    user = User(username='user', password='pass')
+    user = User(username='user', password='pass', email='abcd@gmail.com')
     print(user)
 
     album = Album(name='album', artist='artist', image=[])
