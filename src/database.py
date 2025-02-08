@@ -36,6 +36,10 @@ def add_user(collection: Collection, user: User) -> InsertOneResult:
     return collection.insert_one(user.model_dump(by_alias=True))
 
 
+def is_in_collection(field: str, value: str, collection: Collection) -> bool:
+    return True if collection.find_one({field: value}) else False
+
+
 def vinyl_vault_users() -> Collection:
     print("Function name:", inspect.currentframe().f_code.co_name)
     return get_collection(VINYL_VAULT_DB, 'users_collection')
