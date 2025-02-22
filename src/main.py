@@ -84,9 +84,9 @@ async def register(users_collection: users_collection_dependency,
 
     try:
         data = {"username": username, "password": password}
-        result = users_collection.find_one(data)
-        if result:
-            return result
+        user = users_collection.find_one(data)
+        if user:
+            return RedirectResponse(url=f"user/{user.get('_id')}.html", status_code=303)
         else:
             HTTPException(status_code=401, detail="Invalid login or password")
     except Exception as e:

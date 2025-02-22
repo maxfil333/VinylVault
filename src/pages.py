@@ -20,7 +20,7 @@ def generate_user_page(user_id: str, username: str):
     <div class="container" style="height: 54px">
     <nav class="navbar navbar-expand-sm navbar-dark bg-dark fixed-top">
         <div class="container-fluid">
-            <a class="navbar-brand" href="#" style="padding-top: 0">
+            <a class="navbar-brand" href="/welcome" style="padding-top: 0">
                 <img src="/static/data/other/VVlogo_solo_cr.png" alt="VivylVault Logo" style="width:200px; height:30px;" class="rounded-3">
             </a>
             <div class="collapse navbar-collapse justify-content-end" id="mynavbar">
