@@ -11,7 +11,20 @@
 </head>
 <body>
 
-<div class="container my-4">
+<nav class="navbar navbar-expand-sm navbar-dark bg-dark fixed-top">
+	<div class="container-fluid">
+		<a class="navbar-brand" href="#" style="padding-top: 0">
+            <img src="static/data/other/VVlogo_solo_cr.png" alt="VivylVault Logo" style="width:200px; height:30px;" class="rounded-3">
+        </a>
+		<div class="collapse navbar-collapse justify-content-end" id="mynavbar">
+			<form class="d-flex">
+				<a class="btn btn-light me-2" type="button">My profile</a>
+			</form>
+		</div>
+	</div>
+</nav>
+
+<div class="container my-4 pt-5">
     <h2 class="text-center text-danger" style="font-family: Barlow;">Top Albums</h2>
 
     <div class="mb-3 position-relative">
@@ -29,92 +42,7 @@
     <div>
         <ul id="album-list" class="row list-unstyled g-3">
             <!-- Здесь будут храниться альбомы -->
-
-
-            <li class="col-6 col-sm-6 col-md-4 col-lg-3" data-album-name="One Fierce Beer Coaster" data-artist-name="Bloodhound Gang">
-                <div class="card h-100">
-                    <div class="image-container" >
-                        <!-- Основное изображение -->
-                        <img
-                            src="https://lastfm.freetls.fastly.net/i/u/300x300/981aee4063d2422ea72c4844b31b9cf9.png"
-                            class="album_list_square card-img-top"
-                            onerror="this.style.display='none';"
-                            onload="this.style.opacity='1';">
-                    </div>
-                    <div class="card-body">
-                        <h5 class="album_list_album card-title">One Fierce Beer Coaster</h5>
-                        <p class="album_list_artist card-text text-muted">Bloodhound Gang</p>
-                    </div>
-                </div>
-            </li>
-
-            <li class="col-6 col-sm-6 col-md-4 col-lg-3" data-album-name="Circles" data-artist-name="Mac Miller">
-                <div class="card h-100">
-                    <div class="image-container">
-                        <!-- Основное изображение -->
-                        <img
-                            src="https://lastfm.freetls.fastly.net/i/u/300x300/1fd5bc5de116097cb008d0b09576d216.png"
-                            class="album_list_square card-img-top"
-                            onerror="this.style.display='none';"
-                            onload="this.style.opacity='1';">
-                    </div>
-                    <div class="card-body">
-                        <h5 class="album_list_album card-title">Circles</h5>
-                        <p class="album_list_artist card-text text-muted">Mac Miller</p>
-                    </div>
-                </div>
-            </li>
-
-            <li class="col-6 col-sm-6 col-md-4 col-lg-3" data-album-name="Cowboys From Hell" data-artist-name="Pantera">
-                <div class="card h-100">
-                    <div class="image-container">
-                        <!-- Основное изображение -->
-                        <img
-                            src="https://lastfm.freetls.fastly.net/i/u/300x300/bf7207240ac7461dbdf0ee761f96b701.png"
-                            class="album_list_square card-img-top"
-                            onerror="this.style.display='none';"
-                            onload="this.style.opacity='1';">
-                    </div>
-                    <div class="card-body">
-                        <h5 class="album_list_album card-title">Cowboys From Hell</h5>
-                        <p class="album_list_artist card-text text-muted">Pantera</p>
-                    </div>
-                </div>
-            </li>
-
-            <li class="col-6 col-sm-6 col-md-4 col-lg-3" data-album-name="The Dark Side of the Moon" data-artist-name="Pink Floyd">
-                <div class="card h-100">
-                    <div class="image-container">
-                        <!-- Основное изображение -->
-                        <img
-                            src="https://lastfm.freetls.fastly.net/i/u/300x300/d4bdd038cacbec705e269edb0fd38419.png"
-                            class="album_list_square card-img-top"
-                            onerror="this.style.display='none';"
-                            onload="this.style.opacity='1';">
-                    </div>
-                    <div class="card-body">
-                        <h5 class="album_list_album card-title">The Dark Side of the Moon MoonMoonMoon Moon</h5>
-                        <p class="album_list_artist card-text text-muted">Pink Floyd</p>
-                    </div>
-                </div>
-            </li>
-
-            <li class="col-6 col-sm-6 col-md-4 col-lg-3" data-album-name="21" data-artist-name="Adele">
-                <div class="card h-100">
-                    <div class="image-container">
-                        <!-- Основное изображение -->
-                        <img
-                            src="https://lastfm.freetls.fastly.net/i/u/300x300/7694508c2aa520df08bb8e6248bfedf0.png"
-                            class="album_list_square card-img-top"
-                            onerror="this.style.display='none';"
-                            onload="this.style.opacity='1';">
-                    </div>
-                    <div class="card-body">
-                        <h5 class="album_list_album card-title">21</h5>
-                        <p class="album_list_artist card-text text-muted">Adele</p>
-                    </div>
-                </div>
-            </li>
+            <!-- ... -->
             <!-- Здесь будут храниться альбомы -->
         </ul>
     </div>
