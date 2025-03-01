@@ -45,9 +45,9 @@ const albumsUrl = serverAddress + 'albums/';
 async function sendAlbumToServer(album_search_item) {
 
     const albumData = {
-        name: album_search_item.name,
-        artist: album_search_item.artist,
-        image: album_search_item.image
+        user_id: '67c38d40ef67283fea5d18de',
+        album_name: album_search_item.album_name,
+        artist_name: album_search_item.artist_name
     };
 
     const requestOptions = {
@@ -129,7 +129,7 @@ function addAlbumBySearch(data) {
     // для каждого элемента из выпадающего списка (найденные в результате поиска альбомы/исполнители):
     data.forEach((album_search_item) => {
         const item = document.createElement('div');  // создаём контейнер для варианта (внутри dropdown);
-        item.textContent = `${album_search_item.name} — ${album_search_item.artist}`;  // заполняем текст варианта;
+        item.textContent = `${album_search_item.album_name} — ${album_search_item.artist_name}`;  // заполняем текст варианта;
         item.style.cursor = 'pointer';  // указываем стиль;
 
         // добавляем действие при клике:
@@ -138,8 +138,8 @@ function addAlbumBySearch(data) {
             // Создаем элемент списка
             const li = document.createElement('li');
             li.className = 'col-6 col-sm-6 col-md-4 col-lg-3';
-            li.dataset.albumName = album_search_item.name; // Добавляем параметр albumName
-            li.dataset.artistName = album_search_item.artist; // Добавляем параметр artistName
+            li.dataset.albumName = album_search_item.album_name; // Добавляем параметр albumName
+            li.dataset.artistName = album_search_item.artist_name; // Добавляем параметр artistName
 
             // Создаем внутренние элементы
             const cardDiv = document.createElement('div');
@@ -152,7 +152,7 @@ function addAlbumBySearch(data) {
             const img = document.createElement('img');
             img.src = album_search_item.image.slice(-1)[0]['#text'] || 'data/other/unfound.jpg';
             img.className = 'album_list_square card-img-top';
-            img.alt = album_search_item.name;
+            img.alt = album_search_item.album_name;
 
             // Обработчики событий
             img.onload = () => {
@@ -169,11 +169,11 @@ function addAlbumBySearch(data) {
 
             const albumTitle = document.createElement('h5');
             albumTitle.className = 'album_list_album card-title';
-            albumTitle.textContent = album_search_item.name;
+            albumTitle.textContent = album_search_item.album_name;
 
             const artistText = document.createElement('p');
             artistText.className = 'album_list_artist card-text text-muted';
-            artistText.textContent = album_search_item.artist;
+            artistText.textContent = album_search_item.artist_name;
 
             // Структурируем элементы
             cardBody.appendChild(albumTitle);
@@ -225,7 +225,8 @@ searchAlbumBtn.addEventListener('click', async () => {
             return;
         }
 
-        addAlbumBySearch(data); // data = [{'artist1': .., 'name1': ..}, {'artist2': .., 'name2': ..}]
+        // data = [{"album_name": name1, "artist_name": artist1, "image": ['#text': '..', 'size': '..']},  ...]
+        addAlbumBySearch(data);
     } catch (error) {
         console.error('Ошибка при поиске альбомов:', error);
     }

@@ -2,6 +2,12 @@ from pydantic import BaseModel, Field, EmailStr
 from bson import ObjectId  # id для Mongo
 
 
+class AlbumToServer(BaseModel):
+    user_id: str
+    album_name: str
+    artist_name: str
+
+
 class Album(BaseModel):
     id: str = Field(default_factory=lambda: str(ObjectId()), alias="_id")  # alias для Mongo
     name: str
@@ -15,6 +21,7 @@ class User(BaseModel):
     password: str  # Хэшированный пароль
     email: EmailStr
     albums: list[Album] = Field(default_factory=list)
+    albums_raw: list[dict] = Field(default_factory=list)
 
 
 if __name__ == '__main__':

@@ -7,9 +7,9 @@ from fastapi.staticfiles import StaticFiles
 from pymongo.collection import Collection
 from pydantic import EmailStr
 
-from src.models import Album, User
+from src.models import Album, User, AlbumToServer
 from src.handlers import PageNotFoundHandler
-from src.album_info import album_search
+from src.album_info import album_search, get_album_info
 from src.database import vinyl_vault_users, add_user, is_in_collection
 from src.utils import load_html
 from src.pages import generate_user_page
@@ -26,33 +26,34 @@ app.add_middleware(
     allow_headers=["*"],  # Разрешить все заголовки
 )
 
-albums = []
-
-
-@app.post("/albums/")
-def add_album(album: Album):
-    albums.append(album)
-    return {"message": "Альбом добавлен", "album": album}
-
-
-@app.delete("/albums/")
-def delete_album(album: Album):
-    albums.remove(album)
-    return {"message": "Альбом удален", "album": album}
-
-
-@app.get("/albums/")
-def show_albums():
-    return {"albums": [albums]}
-
 
 @app.get("/albums/{album_name}")
 def search_album(album_name: str):
     search_results = album_search(album_name)
-    return [{"name": x["name"], "artist": x["artist"], "image": x["image"]} for x in search_results]
+    return [{"album_name": x["name"], "artist_name": x["artist"], "image": x["image"]} for x in search_results]
 
 
 users_collection_dependency = Annotated[Collection, Depends(vinyl_vault_users)]
+
+
+# TODO: scripts.js: sendAlbumToServer --> вместо дефолтного _id брать логин+пароль из авторизационных данных.
+#  add_album.users_collection.update_one делать только если юзер с таким логин+пароль существует
+
+@app.post("/albums/")
+def add_album(album: AlbumToServer, users_collection: users_collection_dependency):
+    users_collection.update_one(filter={"_id": album.user_id},
+                                update={"$push": {"albums_raw": get_album_info(artist_name=album.artist_name,
+                                                                               album_name=album.album_name)}})
+    return {"message": "Альбом добавлен", "album": album}
+
+
+# TODO: дописать
+# @app.delete("/albums/")
+# def delete_album(album: Album):
+#     albums.remove(album)
+#     return {"message": "Альбом удален", "album": album}
+# TODO: сделать при загрузке страницы пользователя загрузку его альбомов из базы
+
 
 
 @app.post("/register", response_class=HTMLResponse)
@@ -76,10 +77,9 @@ async def register(users_collection: users_collection_dependency,
     return RedirectResponse(url=f"user/{new_user.inserted_id}.html", status_code=303)
 
 
-
 @app.post("/login")
 async def login(users_collection: users_collection_dependency,
-                   username: str = Form(...), password: str = Form(...)):
+                username: str = Form(...), password: str = Form(...)):
     """ Обработчик логина. Принимает данные из HTML-формы и возвращает пользователя из базы данных. """
 
     try:
