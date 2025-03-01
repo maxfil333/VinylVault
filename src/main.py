@@ -1,4 +1,4 @@
-import os
+import uvicorn
 from typing import Annotated
 from fastapi import FastAPI, Depends, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,8 +7,8 @@ from fastapi.staticfiles import StaticFiles
 from pymongo.collection import Collection
 from pydantic import EmailStr
 
-
 from src.models import Album, User
+from src.handlers import PageNotFoundHandler
 from src.album_info import album_search
 from src.database import vinyl_vault_users, add_user, is_in_collection
 from src.utils import load_html
@@ -69,7 +69,7 @@ async def register(users_collection: users_collection_dependency,
         raise HTTPException(status_code=500, detail=f"Ошибка при регистрации пользователя: {e}")
 
     # Генерируем страницу для нового пользователя
-    generate_user_page(user_id=new_user.inserted_id, username=username)
+    await generate_user_page(user_id=new_user.inserted_id, username=username)
 
     # Перенаправляем пользователя на его страницу.
     # Если страница генерируется в виде файла /users/{user_id}.html, то URL может выглядеть так:
@@ -78,13 +78,12 @@ async def register(users_collection: users_collection_dependency,
 
 
 @app.post("/login")
-async def register(users_collection: users_collection_dependency,
+async def login(users_collection: users_collection_dependency,
                    username: str = Form(...), password: str = Form(...)):
     """ Обработчик логина. Принимает данные из HTML-формы и возвращает пользователя из базы данных. """
 
     try:
-        data = {"username": username, "password": password}
-        user = users_collection.find_one(data)
+        user = users_collection.find_one({"username": username, "password": password})
         if user:
             return RedirectResponse(url=f"user/{user.get('_id')}.html", status_code=303)
         else:
@@ -124,3 +123,9 @@ async def login_page():
 # ! если прописывать путь без "/" в начале (например img src="static/...") - он будет не абсолютным, а относительным
 app.mount("/static", StaticFiles(directory=WEBSITE_DIR), name="static")
 app.mount("/user", StaticFiles(directory=USERS_DIR), name="user")
+
+# Подключаем Middleware
+app.add_middleware(PageNotFoundHandler, vinyl_vault_users=vinyl_vault_users())
+
+if __name__ == '__main__':
+    uvicorn.run(app)

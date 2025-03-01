@@ -1,6 +1,8 @@
+import aiofiles
+
 from src.config import WEBSITE_DIR
 
-def generate_user_page(user_id: str, username: str):
+async  def generate_user_page(user_id: str, username: str):
     html_content = f"""
     
     <!DOCTYPE html>
@@ -74,5 +76,5 @@ def generate_user_page(user_id: str, username: str):
     
     """
     page_path = f"{WEBSITE_DIR}/data/users/{user_id}.html"
-    with open(page_path, "w", encoding="utf-8") as f:
-        f.write(html_content)
+    async with aiofiles.open(page_path, "w", encoding="utf-8") as f:
+        await  f.write(html_content)
