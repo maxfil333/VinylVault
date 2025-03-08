@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     users_collection.drop()
 
-    u1 = add_user(users_collection, VV_User(username='maxfil333', password='333', email="123asdasdx@mail.ru"))
+    u1 = add_user(users_collection, VV_User(username='maxfil333', password='333', email="123asdasdx@mail.ru", _id="testid"))
     u2 = add_user(users_collection, VV_User(username='alice', password='123', email="123asdasdx@mail.ru"))
     print(u1.inserted_id)
     print(u2.inserted_id)
