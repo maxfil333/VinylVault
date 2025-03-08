@@ -29,12 +29,19 @@ app.add_middleware(
 users_collection_dependency = Annotated[Collection, Depends(vinyl_vault_users)]
 
 
-# ________________________ API ________________________
+# ____________________________________ API ____________________________________
 
-@app.get("/api/search/albums/{album_name}")
+@app.get("/api/search/albums/{album_name}", response_model=list[VV_Album])
 def search_album(album_name: str):
     search_results = album_search(album_name)
-    return [{"album_name": x["name"], "artist_name": x["artist"], "image": x["image"]} for x in search_results]
+    albums = []
+    for x in search_results:
+        albums.append(VV_Album.model_validate({
+            "album_name": x["name"],
+            "artist_name": x["artist"],
+            "cover_url": x["image"][-1]["#text"],
+            "cover_url_reserve": x["image"][-2]["#text"]}))
+    return albums
 
 
 # TODO: scripts.js: sendAlbumToServer --> вместо дефолтного _id брать логин+пароль из авторизационных данных.
@@ -49,14 +56,32 @@ def add_album(user_id: str, album: VV_Album, users_collection: users_collection_
     return {"message": "Альбом добавлен", "album": album}
 
 
-# TODO: дописать
+# TODO: дописать + deleteAlbumFromServer изменить
 # @app.delete("/albums/")
 # def delete_album(album: Album):
 #     albums.remove(album)
 #     return {"message": "Альбом удален", "album": album}
-# TODO: сделать при загрузке страницы пользователя загрузку его альбомов из базы
 
-# ________________________ REGISTER and LOGIN ________________________
+
+@app.get("/api/users/{user_id}/albums/all/", response_model=list[VV_Album])
+async def get_user_albums(user_id: str, users_collection: users_collection_dependency):
+    """Возвращает список альбомов пользователя."""
+    albums = []
+    user: dict = users_collection.find_one({"_id": user_id})
+    if user:
+        vv_user = VV_User.model_validate(user)
+        user_albums_raw = vv_user.albums_raw
+        for obj in user_albums_raw:
+            albums.append(VV_Album.model_validate({
+                "album_name": obj['album']['name'],
+                "artist_name": obj['album']['artist'],
+                "cover_url": obj['album']['image'][-1]['#text'],
+                "cover_url_reserve": obj['album']['image'][-2]['#text']
+            }))
+    return albums
+
+
+# ___________________________ REGISTER and LOGIN ___________________________
 
 @app.post("/register", response_class=HTMLResponse)
 async def register(users_collection: users_collection_dependency,
@@ -94,7 +119,7 @@ async def login(users_collection: users_collection_dependency,
         raise HTTPException(status_code=500, detail=f"Ошибка при регистрации пользователя: {e}")
 
 
-# ________________________ HTMLResponse ________________________
+# _____________________________ HTMLResponse _____________________________
 
 @app.get("/welcome", response_class=HTMLResponse)
 async def welcome_page():
