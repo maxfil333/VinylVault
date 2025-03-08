@@ -6,6 +6,8 @@ class VV_Album(BaseModel):
     id: str = Field(default_factory=lambda: str(ObjectId()), alias="_id")  # alias для Mongo
     album_name: str
     artist_name: str
+    cover_url: str = ''
+    cover_url_reserve: str = ''
 
 
 class VV_User(BaseModel):
@@ -28,3 +30,9 @@ if __name__ == '__main__':
     print(user)
 
     VV_User.model_validate(user.model_dump())  # валидация
+
+    dct = {"username": "John", "password": "Doe", "email": "johndoe@gmail.com"}
+    john = VV_User(**dct)  # from dict method 1
+    print(john)
+    john2  = VV_User.model_validate(dct) # from dict method 2
+    print(john2)
