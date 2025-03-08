@@ -11,36 +11,46 @@ const searchAlbumBtn = document.getElementById('search-album-btn');
 //---------------------------------------------------------------------------------------------------------------- UTILS
 
 function logRequestDetails(method, url, headers, body) {
+    console.log('>>> logging >>>')
     console.log(`${method}: Метод:`, method);
     console.log(`${method}: URL:`, url);
     console.log(`${method}: Заголовки:`, headers);
     if (body) {
         console.log(`${method}: Тело запроса:`, body);
     }
+    console.log('<<< logging <<<')
 }
 
 
 //--------------------------------------------------------------------------------------------------- ВИЗУАЛЬНЫЕ ЭФФЕКТЫ
 
 // Эффект увеличения альбома при наведении мыши
-albumList.addEventListener('mouseover', (event) => {
-    const card = event.target.closest('.card');
-    if (card) {
-        card.style.transform = 'scale(1.05)';
-    }
-});
+document.addEventListener('DOMContentLoaded', () => {
+    const albumList = document.querySelector('.album-list'); // Ваш селектор
 
-albumList.addEventListener('mouseout', (event) => {
-    const card = event.target.closest('.card');
-    if (card) {
-        card.style.transform = 'scale(1)';
+    if (albumList) {
+        albumList.addEventListener('mouseover', (event) => {
+            const card = event.target.closest('.card');
+            if (card) {
+                card.style.transform = 'scale(1.05)';
+            }
+        });
+
+        albumList.addEventListener('mouseout', (event) => {
+            const card = event.target.closest('.card');
+            if (card) {
+                card.style.transform = 'scale(1)';
+            }
+        });
+    } else {
+        console.warn('Элемент albumList не найден в DOM');
     }
 });
 
 
 //-------------------------------------------------------------------------------------------------------------------API
 
-// Функция отправки альбома на сервер ( @app.post("/api/users/{user_id}/album/") )
+// Функция отправки альбома на сервер ( @app.post("/api/users/{user_id}/albums/add/") )
 async function sendAlbumToServer(album_search_item) {
 
     const user_id = '67cc043c067ff14f13e357ff'
@@ -58,7 +68,7 @@ async function sendAlbumToServer(album_search_item) {
         body: JSON.stringify(albumData),
     };
 
-    const url = `${serverAddress}api/users/${user_id}/album/`
+    const url = `${serverAddress}api/users/${user_id}/albums/add/`
 
     logRequestDetails('POST', url, requestOptions.headers, JSON.parse(requestOptions.body));
 
@@ -125,14 +135,41 @@ async function searchAlbums(albumName) {
 //------------------------------------------------------------------------------------------------------------- ОСНОВНЫЕ
 
 // Удаление альбома по клику (DOM + СЕРВЕР)
-albumList.addEventListener('click', (event) => {
-    if (event.target.tagName === 'LI') {
-        event.target.remove();  // Удаляем элемент из списка
-        const albumName = event.target.dataset.albumName;  // получаем название альбома
-        const artistName = event.target.dataset.artistName;  // получаем название артиста
-        deleteAlbumFromServer(albumName, artistName);  // Удаляем альбом на сервере
-    }
-});
+// Проверяем, существует ли albumList
+if (albumList) {
+    // Удаление альбома по клику (DOM + СЕРВЕР)
+    albumList.addEventListener('click', (event) => {
+        const target = event.target;
+        // Проверяем, что клик был по элементу <li>
+        if (target.tagName === 'LI') {
+            // Получаем данные из атрибутов data-*
+            const albumName = target.dataset.albumName;
+            const artistName = target.dataset.artistName;
+
+            // Проверяем, что данные присутствуют
+            if (!albumName || !artistName) {
+                console.error('Не удалось удалить альбом: отсутствует albumName или artistName');
+                return;
+            }
+
+            // Удаляем элемент из DOM
+            target.remove();
+
+            // Удаляем альбом на сервере
+            deleteAlbumFromServer(albumName, artistName)
+                .then(() => {
+                    console.log(`Альбом ${albumName} от ${artistName} успешно удалён с сервера`);
+                })
+                .catch((error) => {
+                    console.error('Ошибка при удалении альбома на сервере:', error);
+                    // Опционально: вернуть элемент в DOM при ошибке
+                    // albumList.appendChild(target);
+                });
+        }
+    });
+} else {
+    console.warn('Элемент albumList не найден в DOM');
+}
 
 
 // Добавление альбома на витрину при выборе варианта из выпадающего списка найденных альбомов
@@ -164,7 +201,7 @@ function addAlbumBySearch(data) {
             imageContainer.className = 'image-container'; // Используем класс для фона-заполнителя
 
             const img = document.createElement('img');
-            img.src = album_search_item.image.slice(-1)[0]['#text'] || 'data/other/unfound.jpg';
+            img.src = album_search_item.image.slice(-1)[0]['#text'] || '/static/data/other/unfound.jpg';
             img.className = 'album_list_square card-img-top';
             img.alt = album_search_item.album_name;
 
