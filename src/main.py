@@ -33,6 +33,8 @@ users_collection_dependency = Annotated[Collection, Depends(vinyl_vault_users)]
 
 @app.get("/api/search/albums/{album_name}", response_model=list[VV_Album])
 def search_album(album_name: str):
+    """ Возвращает список найденных альбомов по запросу пользователя """
+
     search_results = album_search(album_name)
     albums = []
     for x in search_results:
@@ -49,7 +51,8 @@ def search_album(album_name: str):
 
 @app.post("/api/users/{user_id}/albums/add/")
 def add_album(user_id: str, album: VV_Album, users_collection: users_collection_dependency):
-    """ Add album to user's DB """
+    """ Добавляет альбом в базу пользователя """
+
     users_collection.update_one(filter={"_id": user_id},
                                 update={"$push": {"albums_raw": get_album_info(artist_name=album.artist_name,
                                                                                album_name=album.album_name)}})
@@ -65,7 +68,8 @@ def add_album(user_id: str, album: VV_Album, users_collection: users_collection_
 
 @app.get("/api/users/{user_id}/albums/all/", response_model=list[VV_Album])
 async def get_user_albums(user_id: str, users_collection: users_collection_dependency):
-    """Возвращает список альбомов пользователя."""
+    """ Возвращает список альбомов пользователя из базы """
+
     albums = []
     user: dict = users_collection.find_one({"_id": user_id})
     if user:
