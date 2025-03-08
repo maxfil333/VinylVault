@@ -118,8 +118,7 @@ async function searchAlbums(albumName) {
     console.log(`GET: ${request}`);
 
     const response = await fetch(request);
-    const data = await response.json();
-    return data;
+    return await response.json();
 }
 
 
