@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
     # update
     users_collection.update_one({"username": "alice"},
-                                {"$set": {"password": "Valley 666 999 888"}})
+                                {"$set": {"password": "666"}})
 
     # get user by username and password
     print(vinyl_vault_users().find_one({'username': 'maxfil333', 'password': '333'}))

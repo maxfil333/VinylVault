@@ -40,9 +40,9 @@ def search_album(album_name: str):
 # TODO: scripts.js: sendAlbumToServer --> вместо дефолтного _id брать логин+пароль из авторизационных данных.
 #  add_album.users_collection.update_one делать только если юзер с таким логин+пароль существует
 
-@app.post("/api/users/{user_id}/album/")
+@app.post("/api/users/{user_id}/albums/add/")
 def add_album(user_id: str, album: VV_Album, users_collection: users_collection_dependency):
-
+    """ Add album to user's DB """
     users_collection.update_one(filter={"_id": user_id},
                                 update={"$push": {"albums_raw": get_album_info(artist_name=album.artist_name,
                                                                                album_name=album.album_name)}})
@@ -76,7 +76,7 @@ async def register(users_collection: users_collection_dependency,
 
     # Перенаправляем пользователя на его страницу.
     # Если страница генерируется в виде файла /users/{user_id}.html, то URL может выглядеть так:
-    return RedirectResponse(url=f"user/{new_user.inserted_id}.html", status_code=303)
+    return RedirectResponse(url=f"/static/data/users/{new_user.inserted_id}.html", status_code=303)
 
 
 @app.post("/login")
@@ -87,7 +87,7 @@ async def login(users_collection: users_collection_dependency,
     try:
         user = users_collection.find_one({"username": username, "password": password})
         if user:
-            return RedirectResponse(url=f"user/{user.get('_id')}.html", status_code=303)
+            return RedirectResponse(url=f"/static/data/users/{user.get('_id')}.html", status_code=303)
         else:
             HTTPException(status_code=401, detail="Invalid login or password")
     except Exception as e:
@@ -123,8 +123,8 @@ async def login_page():
 # если кто-то запрашивает http://<your-domain>/static/somefile.png,
 # FastAPI ищет файл по пути WEBSITE_DIR/somefile.png на диске.
 # ! если прописывать путь без "/" в начале (например img src="static/...") - он будет не абсолютным, а относительным
-app.mount("/static", StaticFiles(directory=WEBSITE_DIR), name="static")
-app.mount("/user", StaticFiles(directory=USERS_DIR), name="user")
+
+app.mount("/static", StaticFiles(directory=WEBSITE_DIR))
 
 # Подключаем Middleware
 app.add_middleware(PageNotFoundHandler, vinyl_vault_users=vinyl_vault_users())

@@ -15,7 +15,7 @@ class PageNotFoundHandler(BaseHTTPMiddleware):
         response = await call_next(request)  # Отправляем запрос в FastAPI
 
         # Если сервер вернул 404 и путь ведёт к странице пользователя
-        if response.status_code == 404 and request.url.path.startswith("/user/"):
+        if response.status_code == 404 and request.url.path.startswith("/static/data/users/"):
             _id = request.url.path.split("/")[-1].replace(".html", "")
             user = self.vinyl_vault_users.find_one({"_id": _id})
 
@@ -23,6 +23,6 @@ class PageNotFoundHandler(BaseHTTPMiddleware):
             await generate_user_page(user_id=_id, username=user.get("username"))
 
             # Повторный редирект, теперь файл уже существует
-            return RedirectResponse(url=f"/user/{_id}.html", status_code=303)
+            return RedirectResponse(url=f"/static/data/users/{_id}.html", status_code=303)
 
         return response  # Отдаём ответ клиенту
