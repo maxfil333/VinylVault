@@ -1,5 +1,7 @@
 //----------------------------------------------------------------------------------------------------------- ПЕРЕМЕННЫЕ
 
+const serverAddress = 'http://127.0.0.1:8000/'; // URL FastAPI сервера
+
 const albumList = document.getElementById('album-list');
 const albumSearchInput = document.getElementById('album-search');
 const dropdownMenu = document.getElementById('dropdown-menu');
@@ -36,16 +38,14 @@ albumList.addEventListener('mouseout', (event) => {
 });
 
 
-//--------------------------------------------------------------------------------------------------------------- СЕРВЕР
+//-------------------------------------------------------------------------------------------------------------------API
 
-const serverAddress = 'http://127.0.0.1:8000/'; // URL FastAPI сервера
-const albumsUrl = serverAddress + 'albums/';
-
-// Функция отправки альбома на сервер ( @app.post("/albums/") )
+// Функция отправки альбома на сервер ( @app.post("/api/users/{user_id}/album/") )
 async function sendAlbumToServer(album_search_item) {
 
+    const user_id = '67cc043c067ff14f13e357ff'
+
     const albumData = {
-        user_id: '67c38d40ef67283fea5d18de',
         album_name: album_search_item.album_name,
         artist_name: album_search_item.artist_name
     };
@@ -58,11 +58,13 @@ async function sendAlbumToServer(album_search_item) {
         body: JSON.stringify(albumData),
     };
 
-    logRequestDetails('POST', albumsUrl, requestOptions.headers, JSON.parse(requestOptions.body));
+    const url = `${serverAddress}api/users/${user_id}/album/`
+
+    logRequestDetails('POST', url, requestOptions.headers, JSON.parse(requestOptions.body));
 
     try {
         // fetch используется для отправки HTTP-запроса
-        const response = await fetch(albumsUrl, requestOptions);
+        const response = await fetch(url, requestOptions);
 
         if (!response.ok) {
             throw new Error(`Ошибка: ${response.status}`);
@@ -76,6 +78,8 @@ async function sendAlbumToServer(album_search_item) {
     }
 }
 
+
+const albumsUrl = serverAddress + 'albums/';
 
 // Функция удаления альбома с сервера ( @app.delete("/albums/") )
 async function deleteAlbumFromServer(albumName, artistName) {
@@ -107,6 +111,17 @@ async function deleteAlbumFromServer(albumName, artistName) {
     }
 }
 
+// Функция для поиска релевантных альбомов ( @app.get("/api/search/albums/{album_name}") )
+async function searchAlbums(albumName) {
+    const url = serverAddress + 'api/search/albums/';
+    const request = `${url}${encodeURIComponent(albumName)}`;
+    console.log(`GET: ${request}`);
+
+    const response = await fetch(request);
+    const data = await response.json();
+    return data;
+}
+
 
 //------------------------------------------------------------------------------------------------------------- ОСНОВНЫЕ
 
@@ -121,7 +136,7 @@ albumList.addEventListener('click', (event) => {
 });
 
 
-// Добавление альбома на витрину при выборе варианта из выпадающего списка найденных альбомов  (DOM + СЕРВЕР)
+// Добавление альбома на витрину при выборе варианта из выпадающего списка найденных альбомов
 function addAlbumBySearch(data) {
     dropdownMenu.innerHTML = ''; // Очищаем предыдущие варианты
 
@@ -200,7 +215,7 @@ function addAlbumBySearch(data) {
 // --- Обработчик кнопки поиска searchAlbumBtn (Найти альбом) ---
 
 // PRESS ENTER
-albumSearchInput.addEventListener('keydown', function(event) {
+albumSearchInput.addEventListener('keydown', function (event) {
     if (event.key === 'Enter') {
         searchAlbumBtn.click();
     }
@@ -212,20 +227,16 @@ searchAlbumBtn.addEventListener('click', async () => {
         return;
     }
 
-    // Отправляем запрос на сервер для поиска альбомов
-    const request = `${albumsUrl}${encodeURIComponent(albumName)}`;
-    console.log(`GET: ${request}`);
-
     try {
-        const response = await fetch(request);
-        const data = await response.json();
+        // API call
+        const data = await searchAlbums(albumName);
 
         if (data.length === 0) {
             console.log('No albums found.');
             return;
         }
 
-        // data = [{"album_name": name1, "artist_name": artist1, "image": ['#text': '..', 'size': '..']},  ...]
+        // data = [{"album_name": name1, "artist_name": artist1, "image": ['#text': '..', 'size': '..']}, ...]
         addAlbumBySearch(data);
     } catch (error) {
         console.error('Ошибка при поиске альбомов:', error);

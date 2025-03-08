@@ -4,7 +4,7 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 import inspect
 
-from src.models import User
+from src.models import VV_User
 
 
 def mongo_connect(host: str = "mongodb://localhost:27017/") -> MongoClient:
@@ -31,7 +31,7 @@ def get_collection(db: Database, collection_name) -> Collection:
     return collection
 
 
-def add_user(collection: Collection, user: User) -> InsertOneResult:
+def add_user(collection: Collection, user: VV_User) -> InsertOneResult:
     print("Function name:", inspect.currentframe().f_code.co_name)
     return collection.insert_one(user.model_dump(by_alias=True))
 
@@ -52,8 +52,8 @@ if __name__ == "__main__":
 
     users_collection.drop()
 
-    u1 = add_user(users_collection, User(username='maxfil333', password='333', email="123asdasdx@mail.ru"))
-    u2 = add_user(users_collection, User(username='alice', password='123', email="123asdasdx@mail.ru"))
+    u1 = add_user(users_collection, VV_User(username='maxfil333', password='333', email="123asdasdx@mail.ru"))
+    u2 = add_user(users_collection, VV_User(username='alice', password='123', email="123asdasdx@mail.ru"))
     print(u1.inserted_id)
     print(u2.inserted_id)
 

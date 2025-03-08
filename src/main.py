@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from pymongo.collection import Collection
 from pydantic import EmailStr
 
-from src.models import Album, User, AlbumToServer
+from src.models import VV_Album, VV_User
 from src.handlers import PageNotFoundHandler
 from src.album_info import album_search, get_album_info
 from src.database import vinyl_vault_users, add_user, is_in_collection
@@ -26,22 +26,24 @@ app.add_middleware(
     allow_headers=["*"],  # Разрешить все заголовки
 )
 
+users_collection_dependency = Annotated[Collection, Depends(vinyl_vault_users)]
 
-@app.get("/albums/{album_name}")
+
+# ________________________ API ________________________
+
+@app.get("/api/search/albums/{album_name}")
 def search_album(album_name: str):
     search_results = album_search(album_name)
     return [{"album_name": x["name"], "artist_name": x["artist"], "image": x["image"]} for x in search_results]
 
 
-users_collection_dependency = Annotated[Collection, Depends(vinyl_vault_users)]
-
-
 # TODO: scripts.js: sendAlbumToServer --> вместо дефолтного _id брать логин+пароль из авторизационных данных.
 #  add_album.users_collection.update_one делать только если юзер с таким логин+пароль существует
 
-@app.post("/albums/")
-def add_album(album: AlbumToServer, users_collection: users_collection_dependency):
-    users_collection.update_one(filter={"_id": album.user_id},
+@app.post("/api/users/{user_id}/album/")
+def add_album(user_id: str, album: VV_Album, users_collection: users_collection_dependency):
+
+    users_collection.update_one(filter={"_id": user_id},
                                 update={"$push": {"albums_raw": get_album_info(artist_name=album.artist_name,
                                                                                album_name=album.album_name)}})
     return {"message": "Альбом добавлен", "album": album}
@@ -54,7 +56,7 @@ def add_album(album: AlbumToServer, users_collection: users_collection_dependenc
 #     return {"message": "Альбом удален", "album": album}
 # TODO: сделать при загрузке страницы пользователя загрузку его альбомов из базы
 
-
+# ________________________ REGISTER and LOGIN ________________________
 
 @app.post("/register", response_class=HTMLResponse)
 async def register(users_collection: users_collection_dependency,
@@ -62,7 +64,7 @@ async def register(users_collection: users_collection_dependency,
     """ Обработчик регистрации. Принимает данные из HTML-формы и добавляет нового пользователя в базу данных. """
 
     try:
-        user = User(username=username, password=password, email=email)
+        user = VV_User(username=username, password=password, email=email)
         if is_in_collection(field='username', value=user.username, collection=users_collection):
             raise HTTPException(status_code=409, detail="User already exists")
         new_user = add_user(users_collection, user)
