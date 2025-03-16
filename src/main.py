@@ -53,17 +53,26 @@ def search_album(album_name: str):
 def add_album(user_id: str, album: VV_Album, users_collection: users_collection_dependency):
     """ Добавляет альбом в базу пользователя """
 
-    users_collection.update_one(filter={"_id": user_id},
-                                update={"$push": {"albums_raw": get_album_info(artist_name=album.artist_name,
-                                                                               album_name=album.album_name)}})
+    users_collection.update_one(
+        filter={"_id": user_id},
+        update={"$push": {"albums_raw": get_album_info(artist_name=album.artist_name, album_name=album.album_name)}}
+    )
     return {"message": "Альбом добавлен", "album": album}
 
 
-# TODO: дописать + deleteAlbumFromServer изменить
-# @app.delete("/albums/")
-# def delete_album(album: Album):
-#     albums.remove(album)
-#     return {"message": "Альбом удален", "album": album}
+# TODO: обработать случаи когда два одинаковых альбома, удалять только один (можно каждому альбому присваивать id)
+#  и идентифицировать их по id а не по комбинации album_name artist_name
+@app.delete("/api/users/{user_id}/albums/delete/")
+def delete_album(user_id: str, album: VV_Album, users_collection: users_collection_dependency):
+    """ Удаляет альбом из базы пользователя """
+
+    result = users_collection.update_one(
+        filter={"_id": user_id},
+        update={"$pull": {"albums_raw": {"album.name": album.album_name, "album.artist": album.artist_name}}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Альбом не найден или не удален")
+    return {"message": "Альбом удален", "album": album}
 
 
 @app.get("/api/users/{user_id}/albums/all/", response_model=list[VV_Album])

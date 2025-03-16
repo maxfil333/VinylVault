@@ -88,8 +88,8 @@ async function sendAlbumToServer(album_search_item) {
 // Функция удаления альбома с сервера ( @app.delete("/albums/") )
 async function deleteAlbumFromServer(albumName, artistName) {
     const albumData = {
-        name: albumName,
-        artist: artistName,
+        album_name: albumName,
+        artist_name: artistName,
     };
 
     const requestOptions = {
@@ -100,7 +100,9 @@ async function deleteAlbumFromServer(albumName, artistName) {
         body: JSON.stringify(albumData),
     };
 
-    const url = ''
+    const user_id = 'testid';
+
+    const url = `${serverAddress}api/users/${user_id}/albums/delete/`;
 
     logRequestDetails('DELETE', url, requestOptions.headers, JSON.parse(requestOptions.body));
 
@@ -203,11 +205,32 @@ function createAlbumCard(album) {
     artistText.className = 'album_list_artist card-text text-muted';
     artistText.textContent = album.artist_name;
 
+    // Создаем кнопку удаления
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'btn btn-danger btn-sm position-absolute';
+    deleteButton.style.top = '5px';
+    deleteButton.style.left = '5px';
+    deleteButton.textContent = '✖';
+    deleteButton.onclick = (event) => {
+        event.stopPropagation(); // Останавливаем всплытие события
+        li.remove(); // Удаляем элемент из DOM
+        deleteAlbumFromServer(album.album_name, album.artist_name) // Удаляем альбом на сервере
+            .then(() => {
+                console.log(`Альбом ${album.album_name} от ${album.artist_name} успешно удалён с сервера`);
+            })
+            .catch((error) => {
+                console.error('Ошибка при удалении альбома на сервере:', error);
+                // Опционально: вернуть элемент в DOM при ошибке
+                // albumList.appendChild(li);
+            });
+    };
+
     // Собираем карточку
     cardBody.appendChild(albumTitle);
     cardBody.appendChild(artistText);
     cardDiv.appendChild(imageContainer);
     cardDiv.appendChild(cardBody);
+    cardDiv.appendChild(deleteButton);
     li.appendChild(cardDiv);
 
     return li;
