@@ -207,21 +207,16 @@ function createAlbumCard(album) {
 
     // Создаем кнопку удаления
     const deleteButton = document.createElement('button');
-    deleteButton.className = 'btn btn-danger btn-sm position-absolute';
+    deleteButton.className = 'delete-album-button btn btn-sm position-absolute';
     deleteButton.style.top = '5px';
     deleteButton.style.left = '5px';
-    deleteButton.textContent = '✖';
+    deleteButton.textContent = '❌';
     deleteButton.onclick = (event) => {
         event.stopPropagation(); // Останавливаем всплытие события
         li.remove(); // Удаляем элемент из DOM
         deleteAlbumFromServer(album.album_name, album.artist_name) // Удаляем альбом на сервере
             .then(() => {
                 console.log(`Альбом ${album.album_name} от ${album.artist_name} успешно удалён с сервера`);
-            })
-            .catch((error) => {
-                console.error('Ошибка при удалении альбома на сервере:', error);
-                // Опционально: вернуть элемент в DOM при ошибке
-                // albumList.appendChild(li);
             });
     };
 

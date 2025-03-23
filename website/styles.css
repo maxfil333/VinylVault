@@ -61,3 +61,13 @@ body.login-page::before {
     opacity: 0; /* Прозрачное до загрузки */
     transition: opacity 0.9s ease; /* Анимация появления */
 }
+
+/* Стили для кнопки удаления */
+.delete-album-button {
+    opacity: 0;
+    transition: opacity 0.6s ease;
+}
+
+.card:hover .delete-album-button {
+    opacity: 1;
+}
