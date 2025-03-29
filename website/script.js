@@ -52,6 +52,7 @@ async function sendAlbumToServer(album_search_item) {
     const user_id = 'testid'
 
     const albumData = {
+        _id: album_search_item._id,
         album_name: album_search_item.album_name,
         artist_name: album_search_item.artist_name
     };
@@ -167,6 +168,8 @@ function createAlbumCard(album) {
     // Создаем элемент списка
     const li = document.createElement('li');
     li.className = 'col-6 col-sm-6 col-md-4 col-lg-3';
+
+    li.dataset.album_id = album._id
     li.dataset.albumName = album.album_name;
     li.dataset.artistName = album.artist_name;
 
