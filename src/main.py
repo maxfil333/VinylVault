@@ -51,11 +51,22 @@ def search_album(album_name: str):
 
 @app.post("/api/users/{user_id}/albums/add/")
 def add_album(user_id: str, album: VV_Album, users_collection: users_collection_dependency):
-    """ Добавляет альбом в базу пользователя """
+    """
+        Добавляет альбом в базу пользователя:
+        1) инициализирует объект VV_Album
+        2) находит через api доп. информацию по альбому
+        3) добавляет к VV_Album найденную информацию (cover urls)
+        4) добавляет альбом в DB
+    """
+
+    album_info = get_album_info(artist_name=album.artist_name, album_name=album.album_name)['album']
+
+    album.cover_url = album_info['image'][-1]['#text']
+    album.cover_url_reserve = album_info['image'][-2]['#text']
 
     users_collection.update_one(
         filter={"_id": user_id},
-        update={"$push": {"albums_raw": get_album_info(artist_name=album.artist_name, album_name=album.album_name)}}
+        update={"$push": {"albums": album.model_dump()}}
     )
     return {"message": "Альбом добавлен", "album": album}
 
@@ -68,7 +79,7 @@ def delete_album(user_id: str, album: VV_Album, users_collection: users_collecti
 
     result = users_collection.update_one(
         filter={"_id": user_id},
-        update={"$pull": {"albums_raw": {"album.name": album.album_name, "album.artist": album.artist_name}}}
+        update={"$pull": {"albums": {"album_name": album.album_name, "artist_name": album.artist_name}}}
     )
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Альбом не найден или не удален")
@@ -79,19 +90,10 @@ def delete_album(user_id: str, album: VV_Album, users_collection: users_collecti
 async def get_user_albums(user_id: str, users_collection: users_collection_dependency):
     """ Возвращает список альбомов пользователя из базы """
 
-    albums = []
     user: dict = users_collection.find_one({"_id": user_id})
+
     if user:
-        vv_user = VV_User.model_validate(user)
-        user_albums_raw = vv_user.albums_raw
-        for obj in user_albums_raw:
-            albums.append(VV_Album.model_validate({
-                "album_name": obj['album']['name'],
-                "artist_name": obj['album']['artist'],
-                "cover_url": obj['album']['image'][-1]['#text'],
-                "cover_url_reserve": obj['album']['image'][-2]['#text']
-            }))
-    return albums
+        return VV_User.model_validate(user).albums
 
 
 # ___________________________ REGISTER and LOGIN ___________________________

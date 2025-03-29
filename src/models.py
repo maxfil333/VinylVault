@@ -16,7 +16,6 @@ class VV_User(BaseModel):
     password: str  # Хэшированный пароль
     email: EmailStr
     albums: list[VV_Album] = Field(default_factory=list)
-    albums_raw: list[dict] = Field(default_factory=list)
 
 
 if __name__ == '__main__':
