@@ -53,7 +53,7 @@ def search_album(album_name: str):
 def add_album(user_id: str, album: VV_Album, users_collection: users_collection_dependency):
     """
         Добавляет альбом в базу пользователя:
-        1) инициализирует объект VV_Album
+        1) инициализирует объект VV_Album (из параметров id, artist, album)
         2) находит через api доп. информацию по альбому
         3) добавляет к VV_Album найденную информацию (cover urls)
         4) добавляет альбом в DB
