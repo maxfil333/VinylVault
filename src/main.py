@@ -65,7 +65,7 @@ def add_album(user_id: str, album: VV_Album, users_collection: users_collection_
     album.cover_url_reserve = album_info['image'][-2]['#text']
 
     users_collection.update_one(
-        filter={"_id": user_id},
+        filter={"user_id": user_id},
         update={"$push": {"albums": album.model_dump()}}
     )
     return {"message": "Альбом добавлен", "album": album}
@@ -73,24 +73,24 @@ def add_album(user_id: str, album: VV_Album, users_collection: users_collection_
 
 # TODO: обработать случаи когда два одинаковых альбома, удалять только один (можно каждому альбому присваивать id)
 #  и идентифицировать их по id а не по комбинации album_name artist_name
-@app.delete("/api/users/{user_id}/albums/delete/")
-def delete_album(user_id: str, album: VV_Album, users_collection: users_collection_dependency):
+@app.delete("/api/users/{user_id}/albums/delete/{album_id}")
+def delete_album(user_id: str, album_id: str, users_collection: users_collection_dependency):
     """ Удаляет альбом из базы пользователя """
 
     result = users_collection.update_one(
-        filter={"_id": user_id},
-        update={"$pull": {"albums": {"album_name": album.album_name, "artist_name": album.artist_name}}}
+        filter={"user_id": user_id},
+        update={"$pull": {"albums": {"album_id": album_id}}}
     )
     if result.modified_count == 0:
         raise HTTPException(status_code=404, detail="Альбом не найден или не удален")
-    return {"message": "Альбом удален", "album": album}
+    return {"message": "Альбом удален", "album": album_id}
 
 
 @app.get("/api/users/{user_id}/albums/all/", response_model=list[VV_Album])
 async def get_user_albums(user_id: str, users_collection: users_collection_dependency):
     """ Возвращает список альбомов пользователя из базы """
 
-    user: dict = users_collection.find_one({"_id": user_id})
+    user: dict = users_collection.find_one({"user_id": user_id})
 
     if user:
         return VV_User.model_validate(user).albums
@@ -127,7 +127,7 @@ async def login(users_collection: users_collection_dependency,
     try:
         user = users_collection.find_one({"username": username, "password": password})
         if user:
-            return RedirectResponse(url=f"/static/data/users/{user.get('_id')}.html", status_code=303)
+            return RedirectResponse(url=f"/static/data/users/{user.get('user_id')}.html", status_code=303)
         else:
             HTTPException(status_code=401, detail="Invalid login or password")
     except Exception as e:

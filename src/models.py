@@ -3,7 +3,7 @@ from bson import ObjectId  # id для Mongo
 
 
 class VV_Album(BaseModel):
-    id: str = Field(default_factory=lambda: str(ObjectId()), alias="_id")  # alias для Mongo
+    album_id: str = Field(default_factory=lambda: str(ObjectId()))
     album_name: str
     artist_name: str
     cover_url: str = ''
@@ -11,7 +11,7 @@ class VV_Album(BaseModel):
 
 
 class VV_User(BaseModel):
-    id: str = Field(default_factory=lambda: str(ObjectId()), alias="_id")
+    user_id: str = Field(default_factory=lambda: str(ObjectId()))
     username: str
     password: str  # Хэшированный пароль
     email: EmailStr

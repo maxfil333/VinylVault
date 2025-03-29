@@ -52,7 +52,7 @@ async function sendAlbumToServer(album_search_item) {
     const user_id = 'testid'
 
     const albumData = {
-        _id: album_search_item._id,
+        album_id: album_search_item.album_id,
         album_name: album_search_item.album_name,
         artist_name: album_search_item.artist_name
     };
@@ -87,25 +87,18 @@ async function sendAlbumToServer(album_search_item) {
 
 
 // Функция удаления альбома с сервера ( @app.delete("/albums/") )
-async function deleteAlbumFromServer(albumName, artistName) {
-    const albumData = {
-        album_name: albumName,
-        artist_name: artistName,
-    };
+async function deleteAlbumFromServer(album_id) {
 
     const requestOptions = {
         method: 'DELETE',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(albumData),
+        headers: {'Content-Type': 'application/json'}
     };
 
     const user_id = 'testid';
 
-    const url = `${serverAddress}api/users/${user_id}/albums/delete/`;
+    const url = `${serverAddress}api/users/${user_id}/albums/delete/${album_id}`;
 
-    logRequestDetails('DELETE', url, requestOptions.headers, JSON.parse(requestOptions.body));
+    logRequestDetails('DELETE', url, requestOptions.headers);
 
     try {
         const response = await fetch(url, requestOptions);
@@ -169,7 +162,7 @@ function createAlbumCard(album) {
     const li = document.createElement('li');
     li.className = 'col-6 col-sm-6 col-md-4 col-lg-3';
 
-    li.dataset.album_id = album._id
+    li.dataset.albumId = album.album_id;
     li.dataset.albumName = album.album_name;
     li.dataset.artistName = album.artist_name;
 
@@ -217,7 +210,7 @@ function createAlbumCard(album) {
     deleteButton.onclick = (event) => {
         event.stopPropagation(); // Останавливаем всплытие события
         li.remove(); // Удаляем элемент из DOM
-        deleteAlbumFromServer(album.album_name, album.artist_name) // Удаляем альбом на сервере
+        deleteAlbumFromServer(album.album_id) // Удаляем альбом на сервере
             .then(() => {
                 console.log(`Альбом ${album.album_name} от ${album.artist_name} успешно удалён с сервера`);
             });
@@ -244,6 +237,7 @@ if (albumList) {
             // Получаем данные из атрибутов data-*
             const albumName = target.dataset.albumName;
             const artistName = target.dataset.artistName;
+            const albumId = target.dataset.albumId
 
             // Проверяем, что данные присутствуют
             if (!albumName || !artistName) {
@@ -255,7 +249,7 @@ if (albumList) {
             target.remove();
 
             // Удаляем альбом на сервере
-            deleteAlbumFromServer(albumName, artistName)
+            deleteAlbumFromServer(albumId)
                 .then(() => {
                     console.log(`Альбом ${albumName} от ${artistName} успешно удалён с сервера`);
                 })
