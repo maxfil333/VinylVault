@@ -71,8 +71,6 @@ def add_album(user_id: str, album: VV_Album, users_collection: users_collection_
     return {"message": "Альбом добавлен", "album": album}
 
 
-# TODO: обработать случаи когда два одинаковых альбома, удалять только один (можно каждому альбому присваивать id)
-#  и идентифицировать их по id а не по комбинации album_name artist_name
 @app.delete("/api/users/{user_id}/albums/delete/{album_id}")
 def delete_album(user_id: str, album_id: str, users_collection: users_collection_dependency):
     """ Удаляет альбом из базы пользователя """
