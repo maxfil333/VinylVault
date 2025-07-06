@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, Field, EmailStr
 from bson import ObjectId  # id для Mongo
 
@@ -16,6 +17,12 @@ class VV_User(BaseModel):
     password: str  # Хэшированный пароль
     email: EmailStr
     albums: list[VV_Album] = Field(default_factory=list)
+
+
+class VV_Session(BaseModel):
+    session_id: str
+    username: str
+    login_time: datetime
 
 
 if __name__ == '__main__':
