@@ -1,19 +1,23 @@
+import time
+import uuid
 import uvicorn
-from typing import Annotated
-from fastapi import FastAPI, Depends, HTTPException, Form
+import asyncio
+from typing import Annotated, Optional
+from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pymongo.collection import Collection
+from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import EmailStr
 
 from src.models import VV_Album, VV_User
 from src.handlers import PageNotFoundHandler
 from src.album_info import album_search, get_album_info
 from src.database import vinyl_vault_users, add_user, is_in_collection
+from src.database import session_cookies, add_session
 from src.utils import load_html
 from src.pages import generate_user_page
-from src.config import WEBSITE_DIR, USERS_DIR
+from src.config import WEBSITE_DIR
 
 app = FastAPI()
 # uvicorn src.main:app --reload
@@ -26,7 +30,10 @@ app.add_middleware(
     allow_headers=["*"],  # Разрешить все заголовки
 )
 
-users_collection_dependency = Annotated[Collection, Depends(vinyl_vault_users)]
+users_collection_dep = Annotated[AsyncIOMotorCollection, Depends(vinyl_vault_users)]
+session_cookies_dep = Annotated[AsyncIOMotorCollection, Depends(session_cookies)]
+
+SESSION_COOKIES_KEY = 'vv_session_cookie'
 
 
 # ____________________________________ API ____________________________________
@@ -50,7 +57,7 @@ def search_album(album_name: str):
 #  add_album.users_collection.update_one делать только если юзер с таким логин+пароль существует
 
 @app.post("/api/users/{user_id}/albums/add/")
-def add_album(user_id: str, album: VV_Album, users_collection: users_collection_dependency):
+async def add_album(user_id: str, album: VV_Album, users_collection: users_collection_dep):
     """
         Добавляет альбом в базу пользователя:
         1) инициализирует объект VV_Album (из параметров id, artist, album)
@@ -64,7 +71,7 @@ def add_album(user_id: str, album: VV_Album, users_collection: users_collection_
     album.cover_url = album_info['image'][-1]['#text']
     album.cover_url_reserve = album_info['image'][-2]['#text']
 
-    users_collection.update_one(
+    await users_collection.update_one(
         filter={"user_id": user_id},
         update={"$push": {"albums": album.model_dump()}}
     )
@@ -72,10 +79,10 @@ def add_album(user_id: str, album: VV_Album, users_collection: users_collection_
 
 
 @app.delete("/api/users/{user_id}/albums/delete/{album_id}")
-def delete_album(user_id: str, album_id: str, users_collection: users_collection_dependency):
+async def delete_album(user_id: str, album_id: str, users_collection: users_collection_dep):
     """ Удаляет альбом из базы пользователя """
 
-    result = users_collection.update_one(
+    result = await users_collection.update_one(
         filter={"user_id": user_id},
         update={"$pull": {"albums": {"album_id": album_id}}}
     )
@@ -85,10 +92,10 @@ def delete_album(user_id: str, album_id: str, users_collection: users_collection
 
 
 @app.get("/api/users/{user_id}/albums/all/", response_model=list[VV_Album])
-async def get_user_albums(user_id: str, users_collection: users_collection_dependency):
+async def get_user_albums(user_id: str, users_collection: users_collection_dep):
     """ Возвращает список альбомов пользователя из базы """
 
-    user: dict = users_collection.find_one({"user_id": user_id})
+    user: dict = await users_collection.find_one({"user_id": user_id})
 
     if user:
         return VV_User.model_validate(user).albums
@@ -96,16 +103,36 @@ async def get_user_albums(user_id: str, users_collection: users_collection_depen
 
 # ___________________________ REGISTER and LOGIN ___________________________
 
+async def verify_login_password(username: str, password: str,
+                                users_collection: users_collection_dep) -> Optional[VV_User]:
+    """ Проверяет логин и пароль пользователя и возвращает пользователя из базы данных. """
+    if user:= await users_collection.find_one({"username": username, "password": password}):
+        return user
+    raise HTTPException(status_code=401, detail="Invalid login or password")
+
+
+def generate_session_id() -> str:
+    """ Генерация случайного id сессии """
+    return str(uuid.uuid4().hex) + str(time.time_ns())
+
+
+async def get_session_data(cookies_collection: session_cookies_dep, session_id: str = Cookie(alias=SESSION_COOKIES_KEY)) -> dict:
+    """ Достать информацию по Cookie """
+    if session:= await cookies_collection.find_one({'session_id': session_id}):
+        return session
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
+
+
 @app.post("/register", response_class=HTMLResponse)
-async def register(users_collection: users_collection_dependency,
+async def register(users_collection: users_collection_dep,
                    username: str = Form(...), password: str = Form(...), email: EmailStr = Form(...)):
     """ Обработчик регистрации. Принимает данные из HTML-формы и добавляет нового пользователя в базу данных. """
 
     try:
         user = VV_User(username=username, password=password, email=email)
-        if is_in_collection(field='username', value=user.username, collection=users_collection):
+        if await is_in_collection(field='username', value=user.username, collection=users_collection):
             raise HTTPException(status_code=409, detail="User already exists")
-        new_user = add_user(users_collection, user)
+        new_user = await add_user(users_collection, user)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при регистрации пользователя: {e}")
 
@@ -118,18 +145,19 @@ async def register(users_collection: users_collection_dependency,
 
 
 @app.post("/login")
-async def login(users_collection: users_collection_dependency,
+async def login(users_collection: users_collection_dep, session_cookies: session_cookies_dep, response: Response,
                 username: str = Form(...), password: str = Form(...)):
     """ Обработчик логина. Принимает данные из HTML-формы и возвращает пользователя из базы данных. """
 
-    try:
-        user = users_collection.find_one({"username": username, "password": password})
-        if user:
-            return RedirectResponse(url=f"/static/data/users/{user.get('user_id')}.html", status_code=303)
-        else:
-            HTTPException(status_code=401, detail="Invalid login or password")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Ошибка при регистрации пользователя: {e}")
+    user = await verify_login_password(username, password, users_collection)
+    session_id = generate_session_id()
+    session = await add_session(collection=session_cookies, session_id=session_id, username=username)
+    response.set_cookie(SESSION_COOKIES_KEY, session_id)
+    print(f"created cookie: {session}")
+
+    response = RedirectResponse(url=f"/static/data/users/{user.get('user_id')}.html", status_code=303)
+    response.set_cookie(key=SESSION_COOKIES_KEY, value=session_id)
+    return response
 
 
 # _____________________________ HTMLResponse _____________________________
@@ -161,11 +189,17 @@ async def login_page():
 # если кто-то запрашивает http://<your-domain>/static/somefile.png,
 # FastAPI ищет файл по пути WEBSITE_DIR/somefile.png на диске.
 # ! если прописывать путь без "/" в начале (например img src="static/...") - он будет не абсолютным, а относительным
-
 app.mount("/static", StaticFiles(directory=WEBSITE_DIR))
 
-# Подключаем Middleware
-app.add_middleware(PageNotFoundHandler, vinyl_vault_users=vinyl_vault_users())
 
-if __name__ == '__main__':
+async def setup_app():
+    # Подключаем Middleware
+    users_collection = await vinyl_vault_users()  # Дожидаемся коллекции
+    app.add_middleware(PageNotFoundHandler, vinyl_vault_users=users_collection)
+    return app
+
+
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(setup_app())
     uvicorn.run(app)
