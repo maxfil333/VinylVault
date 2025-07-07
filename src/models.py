@@ -22,6 +22,7 @@ class VV_User(BaseModel):
 class VV_Session(BaseModel):
     session_id: str
     username: str
+    user_id: str
     login_time: datetime
 
 

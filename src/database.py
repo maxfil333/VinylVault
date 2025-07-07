@@ -35,12 +35,13 @@ async def add_user(collection: AsyncIOMotorCollection, user: VV_User) -> InsertO
     return await collection.insert_one(user.model_dump(by_alias=True))
 
 
-async def add_session(collection: AsyncIOMotorCollection, session_id: str, username: str) -> InsertOneResult:
+async def add_session(collection: AsyncIOMotorCollection, session_id: str, user: VV_User) -> InsertOneResult:
     print("Function name:", inspect.currentframe().f_code.co_name)
     return await collection.insert_one(
         VV_Session(
             session_id=session_id,
-            username=username,
+            user_id=user.user_id,
+            username=user.username,
             login_time=datetime.now()
         ).model_dump()
     )
