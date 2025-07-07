@@ -162,6 +162,11 @@ async def login(users_collection: users_collection_dep, session_cookies: session
 
 # _____________________________ HTMLResponse _____________________________
 
+@app.get("/", response_class=HTMLResponse)
+async def default_page():
+    response = RedirectResponse(url=f"/welcome")
+    return response
+
 @app.get("/welcome", response_class=HTMLResponse)
 async def welcome_page():
     content = load_html("welcome.html", WEBSITE_DIR)
@@ -203,3 +208,8 @@ if __name__ == "__main__":
     loop = asyncio.get_event_loop()
     loop.run_until_complete(setup_app())
     uvicorn.run(app)
+
+#todo: редирект с главной на welcome если нет куки, на my если есть куки
+
+#todo: https://chatgpt.com/share/686a8248-0344-8010-9dd2-4ef466f31b03
+# /my + удалить из свободного доступа users
