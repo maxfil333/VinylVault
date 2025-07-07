@@ -1,3 +1,4 @@
+import os
 import time
 import uuid
 import uvicorn
@@ -5,7 +6,7 @@ import asyncio
 from typing import Annotated, Optional
 from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import EmailStr
@@ -107,7 +108,7 @@ async def verify_login_password(username: str, password: str,
                                 users_collection: users_collection_dep) -> Optional[VV_User]:
     """ Проверяет логин и пароль пользователя и возвращает пользователя из базы данных. """
     if user:= await users_collection.find_one({"username": username, "password": password}):
-        return user
+        return VV_User.model_validate(user)
     raise HTTPException(status_code=401, detail="Invalid login or password")
 
 
@@ -151,13 +152,24 @@ async def login(users_collection: users_collection_dep, session_cookies: session
 
     user = await verify_login_password(username, password, users_collection)
     session_id = generate_session_id()
-    session = await add_session(collection=session_cookies, session_id=session_id, username=username)
+    session = await add_session(collection=session_cookies, session_id=session_id, user=user)
     response.set_cookie(SESSION_COOKIES_KEY, session_id)
     print(f"created cookie: {session}")
 
-    response = RedirectResponse(url=f"/static/data/users/{user.get('user_id')}.html", status_code=303)
+    response = RedirectResponse(url=f"/static/data/users/{user.user_id}.html", status_code=303)
     response.set_cookie(key=SESSION_COOKIES_KEY, value=session_id)
     return response
+
+
+# _____________________________ PAGES _____________________________
+
+@app.get("/my")
+async def my_page(session_data: dict = Depends(get_session_data)):
+    user_id = session_data["user_id"]
+    file_path = os.path.join(WEBSITE_DIR, "data", "users", f"{user_id}.html")
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Page not found")
+    return FileResponse(path=file_path, media_type="text/html")
 
 
 # _____________________________ HTMLResponse _____________________________
@@ -213,3 +225,5 @@ if __name__ == "__main__":
 
 #todo: https://chatgpt.com/share/686a8248-0344-8010-9dd2-4ef466f31b03
 # /my + удалить из свободного доступа users
+
+#todo: перенести users из website в protected
