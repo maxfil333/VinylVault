@@ -39,75 +39,6 @@ session_cookies_dep = Annotated[AsyncIOMotorCollection, Depends(session_cookies)
 
 SESSION_COOKIES_KEY = 'vv_session_cookie'
 
-
-# ____________________________________ API ____________________________________
-
-@app.get("/api/search/albums/{album_name}", response_model=list[VV_Album])
-def search_album(album_name: str):
-    """ Возвращает список найденных альбомов по запросу пользователя """
-    logger.info("")
-    search_results = album_search(album_name)
-    albums = []
-    for x in search_results:
-        albums.append(VV_Album.model_validate({
-            "album_name": x["name"],
-            "artist_name": x["artist"],
-            "cover_url": x["image"][-1]["#text"],
-            "cover_url_reserve": x["image"][-2]["#text"]}))
-    return albums
-
-
-# TODO: scripts.js: sendAlbumToServer --> вместо дефолтного _id брать логин+пароль из авторизационных данных.
-#  add_album.users_collection.update_one делать только если юзер с таким логин+пароль существует
-
-@app.post("/api/users/{user_id}/albums/add/")
-async def add_album(user_id: str, album: VV_Album, users_collection: users_collection_dep):
-    """
-        Добавляет альбом в базу пользователя:
-        1) инициализирует объект VV_Album (из параметров id, artist, album)
-        2) находит через api доп. информацию по альбому
-        3) добавляет к VV_Album найденную информацию (cover urls)
-        4) добавляет альбом в DB
-    """
-    logger.info("")
-
-    album_info = get_album_info(artist_name=album.artist_name, album_name=album.album_name)['album']
-
-    album.cover_url = album_info['image'][-1]['#text']
-    album.cover_url_reserve = album_info['image'][-2]['#text']
-
-    await users_collection.update_one(
-        filter={"user_id": user_id},
-        update={"$push": {"albums": album.model_dump()}}
-    )
-    return {"message": "Альбом добавлен", "album": album}
-
-
-@app.delete("/api/users/{user_id}/albums/delete/{album_id}")
-async def delete_album(user_id: str, album_id: str, users_collection: users_collection_dep):
-    """ Удаляет альбом из базы пользователя """
-    logger.info("")
-
-    result = await users_collection.update_one(
-        filter={"user_id": user_id},
-        update={"$pull": {"albums": {"album_id": album_id}}}
-    )
-    if result.modified_count == 0:
-        raise HTTPException(status_code=404, detail="Альбом не найден или не удален")
-    return {"message": "Альбом удален", "album": album_id}
-
-
-@app.get("/api/users/{user_id}/albums/all/", response_model=list[VV_Album])
-async def get_user_albums(user_id: str, users_collection: users_collection_dep):
-    """ Возвращает список альбомов пользователя из базы """
-    logger.info("")
-
-    user: dict = await users_collection.find_one({"user_id": user_id})
-
-    if user:
-        return VV_User.model_validate(user).albums
-
-
 # ___________________________ REGISTER and LOGIN ___________________________
 
 async def verify_login_password(username: str, password: str,
@@ -223,6 +154,85 @@ async def login_page():
     content = load_html("login.html", WEBSITE_DIR)
     return HTMLResponse(content=content)
 
+
+# ____________________________________ API ____________________________________
+
+@app.get("/api/search/albums/{album_name}", response_model=list[VV_Album])
+def search_album(album_name: str):
+    """ Возвращает список найденных альбомов по запросу пользователя """
+    logger.info("")
+    search_results = album_search(album_name)
+    albums = []
+    for x in search_results:
+        albums.append(VV_Album.model_validate({
+            "album_name": x["name"],
+            "artist_name": x["artist"],
+            "cover_url": x["image"][-1]["#text"],
+            "cover_url_reserve": x["image"][-2]["#text"]}))
+    return albums
+
+
+# TODO: scripts.js: sendAlbumToServer --> вместо дефолтного _id брать логин+пароль из авторизационных данных.
+#  add_album.users_collection.update_one делать только если юзер с таким логин+пароль существует
+
+@app.post("/api/users/{user_id}/albums/add/")
+async def add_album(user_id: str, album: VV_Album, users_collection: users_collection_dep):
+    """
+        Добавляет альбом в базу пользователя:
+        1) инициализирует объект VV_Album (из параметров id, artist, album)
+        2) находит через api доп. информацию по альбому
+        3) добавляет к VV_Album найденную информацию (cover urls)
+        4) добавляет альбом в DB
+    """
+    logger.info("")
+
+    album_info = get_album_info(artist_name=album.artist_name, album_name=album.album_name)['album']
+
+    album.cover_url = album_info['image'][-1]['#text']
+    album.cover_url_reserve = album_info['image'][-2]['#text']
+
+    await users_collection.update_one(
+        filter={"user_id": user_id},
+        update={"$push": {"albums": album.model_dump()}}
+    )
+    return {"message": "Альбом добавлен", "album": album}
+
+
+@app.delete("/api/users/{user_id}/albums/delete/{album_id}")
+async def delete_album(user_id: str, album_id: str, users_collection: users_collection_dep):
+    """ Удаляет альбом из базы пользователя """
+    logger.info("")
+
+    result = await users_collection.update_one(
+        filter={"user_id": user_id},
+        update={"$pull": {"albums": {"album_id": album_id}}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Альбом не найден или не удален")
+    return {"message": "Альбом удален", "album": album_id}
+
+
+@app.get("/api/users/{user_id}/albums/all/", response_model=list[VV_Album])
+async def get_user_albums(user_id: str, users_collection: users_collection_dep):
+    """ Возвращает список альбомов пользователя из базы """
+    logger.info(f"{user_id=}")
+
+    user: dict = await users_collection.find_one({"user_id": user_id})
+
+    if user:
+        return VV_User.model_validate(user).albums
+    return []
+
+
+@app.get("/api/me/userid")
+async def get_current_user_id(session_data: dict = Depends(get_session_data)):
+    """ Для запроса с фронта. Возвращает user_id по Cookie"""
+    logger.info("")
+
+    return {"user_id": session_data["user_id"]}
+
+
+# ____________________________________ FastAPI config ____________________________________
 
 # если кто-то запрашивает http://<your-domain>/static/somefile.png,
 # FastAPI ищет файл по пути WEBSITE_DIR/somefile.png на диске.

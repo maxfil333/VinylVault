@@ -46,10 +46,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 //-------------------------------------------------------------------------------------------------------------------API
 
+// Функция для получения user_id из cookie: @app.get("api/me/userid")
+async function getUserIdFromSession() {
+    const response = await fetch(serverAddress + 'api/me/userid', { credentials: 'include' });
+    if (!response.ok) return null;
+    const data = await response.json();
+    console.log(data.user_id)
+    return data.user_id;
+}
+
 // Функция отправки альбома на сервер ( @app.post("/api/users/{user_id}/albums/add/") )
 async function sendAlbumToServer(album_search_item) {
 
-    const user_id = 'testid'
+    const user_id = await getUserIdFromSession();
+    if (!user_id) {
+        console.error('user_id не найден в cookie!');
+        return;
+    }
 
     const albumData = {
         album_id: album_search_item.album_id,
@@ -94,7 +107,11 @@ async function deleteAlbumFromServer(album_id) {
         headers: {'Content-Type': 'application/json'}
     };
 
-    const user_id = 'testid';
+    const user_id = await getUserIdFromSession();
+    if (!user_id) {
+        console.error('user_id не найден в cookie!');
+        return;
+    }
 
     const url = `${serverAddress}api/users/${user_id}/albums/delete/${album_id}`;
 
@@ -143,16 +160,19 @@ async function loadUserAlbums(userId) {
 }
 
 // ... вызов функции при загрузке страницы
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     const pageType = document.querySelector("meta[name='page-type']")?.content;
 
     if (pageType === "user") {
         console.log("✅ Это страница пользователя. Загружаем альбомы...");
-        const userId = "testid"; // Динамически получаем ID пользователя
+        const userId = await getUserIdFromSession(); // Теперь await работает корректно
+        if (!userId) {
+            console.error('user_id не найден в cookie!');
+            return;
+        }
         loadUserAlbums(userId);
     }
 });
-
 
 //------------------------------------------------------------------------------------------------------------- ОСНОВНЫЕ
 
