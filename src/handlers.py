@@ -1,5 +1,5 @@
 from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.responses import RedirectResponse
+from starlette.responses import RedirectResponse, JSONResponse
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from src.pages import generate_user_page
@@ -26,3 +26,16 @@ class PageNotFoundHandler(BaseHTTPMiddleware):
             return RedirectResponse(url=f"/static/data/users/{_id}.html", status_code=303)
 
         return response  # Отдаём ответ клиенту
+
+
+from fastapi import Request, status, FastAPI
+from starlette.exceptions import HTTPException as StarletteHTTPException
+
+
+def register_exception_handlers(app: FastAPI):
+
+    @app.exception_handler(StarletteHTTPException)
+    async def global_http_exception_handler(request: Request, exc: StarletteHTTPException):
+        if exc.status_code == status.HTTP_401_UNAUTHORIZED:
+            return RedirectResponse(url="/login", status_code=303)
+        return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
