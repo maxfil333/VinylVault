@@ -12,15 +12,18 @@ from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import EmailStr
 
 from src.models import VV_Album, VV_User
-from src.handlers import PageNotFoundHandler
+from src.handlers import PageNotFoundHandler, register_exception_handlers
 from src.album_info import album_search, get_album_info
 from src.database import vinyl_vault_users, add_user, is_in_collection
 from src.database import session_cookies, add_session
 from src.utils import load_html
 from src.pages import generate_user_page
 from src.config import WEBSITE_DIR
+from src.logger import logger
 
 app = FastAPI()
+register_exception_handlers(app)
+
 # uvicorn src.main:app --reload
 
 app.add_middleware(
@@ -42,7 +45,7 @@ SESSION_COOKIES_KEY = 'vv_session_cookie'
 @app.get("/api/search/albums/{album_name}", response_model=list[VV_Album])
 def search_album(album_name: str):
     """ Возвращает список найденных альбомов по запросу пользователя """
-
+    logger.info("")
     search_results = album_search(album_name)
     albums = []
     for x in search_results:
@@ -66,6 +69,7 @@ async def add_album(user_id: str, album: VV_Album, users_collection: users_colle
         3) добавляет к VV_Album найденную информацию (cover urls)
         4) добавляет альбом в DB
     """
+    logger.info("")
 
     album_info = get_album_info(artist_name=album.artist_name, album_name=album.album_name)['album']
 
@@ -82,6 +86,7 @@ async def add_album(user_id: str, album: VV_Album, users_collection: users_colle
 @app.delete("/api/users/{user_id}/albums/delete/{album_id}")
 async def delete_album(user_id: str, album_id: str, users_collection: users_collection_dep):
     """ Удаляет альбом из базы пользователя """
+    logger.info("")
 
     result = await users_collection.update_one(
         filter={"user_id": user_id},
@@ -95,6 +100,7 @@ async def delete_album(user_id: str, album_id: str, users_collection: users_coll
 @app.get("/api/users/{user_id}/albums/all/", response_model=list[VV_Album])
 async def get_user_albums(user_id: str, users_collection: users_collection_dep):
     """ Возвращает список альбомов пользователя из базы """
+    logger.info("")
 
     user: dict = await users_collection.find_one({"user_id": user_id})
 
@@ -107,6 +113,7 @@ async def get_user_albums(user_id: str, users_collection: users_collection_dep):
 async def verify_login_password(username: str, password: str,
                                 users_collection: users_collection_dep) -> Optional[VV_User]:
     """ Проверяет логин и пароль пользователя и возвращает пользователя из базы данных. """
+    logger.info("")
     if user:= await users_collection.find_one({"username": username, "password": password}):
         return VV_User.model_validate(user)
     raise HTTPException(status_code=401, detail="Invalid login or password")
@@ -114,11 +121,16 @@ async def verify_login_password(username: str, password: str,
 
 def generate_session_id() -> str:
     """ Генерация случайного id сессии """
+    logger.info("")
     return str(uuid.uuid4().hex) + str(time.time_ns())
 
 
-async def get_session_data(cookies_collection: session_cookies_dep, session_id: str = Cookie(alias=SESSION_COOKIES_KEY)) -> dict:
+async def get_session_data(
+        cookies_collection: session_cookies_dep,
+        session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None)
+) -> dict:
     """ Достать информацию по Cookie """
+    logger.info(f"получил куку {session_id}")
     if session:= await cookies_collection.find_one({'session_id': session_id}):
         return session
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
@@ -128,7 +140,7 @@ async def get_session_data(cookies_collection: session_cookies_dep, session_id: 
 async def register(users_collection: users_collection_dep,
                    username: str = Form(...), password: str = Form(...), email: EmailStr = Form(...)):
     """ Обработчик регистрации. Принимает данные из HTML-формы и добавляет нового пользователя в базу данных. """
-
+    logger.info("")
     try:
         user = VV_User(username=username, password=password, email=email)
         if await is_in_collection(field='username', value=user.username, collection=users_collection):
@@ -149,7 +161,7 @@ async def register(users_collection: users_collection_dep,
 async def login(users_collection: users_collection_dep, session_cookies: session_cookies_dep, response: Response,
                 username: str = Form(...), password: str = Form(...)):
     """ Обработчик логина. Принимает данные из HTML-формы и возвращает пользователя из базы данных. """
-
+    logger.info("")
     user = await verify_login_password(username, password, users_collection)
     session_id = generate_session_id()
     session = await add_session(collection=session_cookies, session_id=session_id, user=user)
@@ -165,11 +177,20 @@ async def login(users_collection: users_collection_dep, session_cookies: session
 
 @app.get("/my")
 async def my_page(session_data: dict = Depends(get_session_data)):
+    """ Страница пользователя """
+    logger.info("")
+
     user_id = session_data["user_id"]
     file_path = os.path.join(WEBSITE_DIR, "data", "users", f"{user_id}.html")
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Page not found")
-    return FileResponse(path=file_path, media_type="text/html")
+
+    headers = {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",  #  запрет на хранение содержимого в кеше
+        "Pragma": "no-cache",  # устаревший заголовок HTTP/1.0
+        "Expires": "0"  # устаревший заголовок HTTP/1.0
+    }
+    return FileResponse(path=file_path, media_type="text/html", headers=headers)
 
 
 # _____________________________ HTMLResponse _____________________________
