@@ -5,16 +5,18 @@ from pymongo.results import InsertOneResult
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
 
 from src.models import VV_User, VV_Session
+from src.logger import logger
 
 
 async def mongo_connect(host: str = "mongodb://localhost:27017/") -> AsyncIOMotorClient:
     """ Подключение к локальной базе данных MongoDB """
-    print("Function name:", inspect.currentframe().f_code.co_name)
+    logger.info("")
     client = AsyncIOMotorClient(host)
     return client
 
 
 async def get_db(client: AsyncIOMotorClient, db_name: str) -> AsyncIOMotorDatabase:
+    logger.info("")
     db = client[db_name]
     return db
 
@@ -25,18 +27,18 @@ VINYL_VAULT_DB = asyncio.get_event_loop().run_until_complete(get_db(MONGO_CLIENT
 
 
 async def get_collection(db: AsyncIOMotorDatabase, collection_name: str) -> AsyncIOMotorCollection:
-    print("Function name:", inspect.currentframe().f_code.co_name)
+    logger.info("")
     collection = db[collection_name]
     return collection
 
 
 async def add_user(collection: AsyncIOMotorCollection, user: VV_User) -> InsertOneResult:
-    print("Function name:", inspect.currentframe().f_code.co_name)
+    logger.info("")
     return await collection.insert_one(user.model_dump(by_alias=True))
 
 
 async def add_session(collection: AsyncIOMotorCollection, session_id: str, user: VV_User) -> InsertOneResult:
-    print("Function name:", inspect.currentframe().f_code.co_name)
+    logger.info("")
     return await collection.insert_one(
         VV_Session(
             session_id=session_id,
@@ -48,16 +50,17 @@ async def add_session(collection: AsyncIOMotorCollection, session_id: str, user:
 
 
 async def is_in_collection(field: str, value: str, collection: AsyncIOMotorCollection) -> bool:
+    logger.info("")
     return bool(await collection.find_one({field: value}))
 
 
 async def vinyl_vault_users() -> AsyncIOMotorCollection:
-    print("Function name:", inspect.currentframe().f_code.co_name)
+    logger.info("")
     return await get_collection(VINYL_VAULT_DB, 'users_collection')
 
 
 async def session_cookies() -> AsyncIOMotorCollection:
-    print("Function name:", inspect.currentframe().f_code.co_name)
+    logger.info("")
     return await get_collection(VINYL_VAULT_DB, 'session_cookies_collection')
 
 
