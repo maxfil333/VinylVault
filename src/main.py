@@ -106,7 +106,7 @@ async def login(users_collection: users_collection_dep, session_cookies: session
 
 # _____________________________ PAGES _____________________________
 
-@app.get("/my")
+@app.get("/me")
 async def my_page(session_data: dict = Depends(get_session_data)):
     """ Страница пользователя """
     logger.info("")
