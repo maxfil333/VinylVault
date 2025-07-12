@@ -96,7 +96,6 @@ async def login(users_collection: users_collection_dep, session_cookies: session
     user = await verify_login_password(username, password, users_collection)
     session_id = generate_session_id()
     session = await add_session(collection=session_cookies, session_id=session_id, user=user)
-    response.set_cookie(SESSION_COOKIES_KEY, session_id)
     print(f"created cookie: {session}")
 
     response = RedirectResponse(url=f"/static/data/users/{user.user_id}.html", status_code=303)
