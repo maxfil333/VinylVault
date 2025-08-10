@@ -11,9 +11,10 @@ from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import EmailStr
 
-from src.models import VV_Album, VV_User
+from src.models import VV_Album, VV_User, SearchResults
 from src.handlers import PageNotFoundHandler, register_exception_handlers
-from src.album_info import album_search, album_getinfo
+from src.album_info import album_search, album_getinfo, album_search_async
+from src.artist_info import artist_top_albums_async
 from src.database import vinyl_vault_users, add_user, is_in_collection
 from src.database import session_cookies, add_session
 from src.utils import load_html
@@ -161,17 +162,53 @@ async def login_page():
 
 @app.get("/api/search/albums/{album_name}", response_model=list[VV_Album])
 def search_album(album_name: str):
-    """ Возвращает список найденных альбомов по запросу пользователя """
+    """ Возвращает список найденных альбомов по запросу пользователя (legacy для фронта) """
     logger.info("")
     search_results = album_search(album_name)
-    albums = []
+    albums: list[VV_Album] = []
     for x in search_results:
         albums.append(VV_Album.model_validate({
-            "album_name": x["name"],
-            "artist_name": x["artist"],
-            "cover_url": x["image"][-1]["#text"],
-            "cover_url_reserve": x["image"][-2]["#text"]}))
+            "album_name": x.get("name", ""),
+            "artist_name": x.get("artist", ""),
+            "cover_url": (x.get("image", [])[-1] or {}).get("#text", "") if x.get("image") else "",
+            "cover_url_reserve": (x.get("image", [])[-2] or {}).get("#text", "") if x.get("image") and len(x.get("image")) > 1 else ""
+        }))
     return albums
+
+
+@app.get("/api/search/mixed/{query}", response_model=SearchResults)
+async def search_mixed(query: str):
+    """ Выполняет параллельный поиск: по имени альбома и по топ-альбомам исполнителя. Возвращает сгруппировано. """
+    logger.info("")
+
+    # Асинхронно запускаем оба запроса к внешнему API
+    album_search_results, artist_top_results = await asyncio.gather(
+        album_search_async(query),
+        artist_top_albums_async(query)
+    )
+    albums_group: list[VV_Album] = []
+    for x in album_search_results:
+        albums_group.append(VV_Album.model_validate({
+            "album_name": x.get("name", ""),
+            "artist_name": x.get("artist", ""),
+            "cover_url": (x.get("image", [])[-1] or {}).get("#text", "") if x.get("image") else "",
+            "cover_url_reserve": (x.get("image", [])[-2] or {}).get("#text", "") if x.get("image") and len(x.get("image")) > 1 else ""
+        }))
+
+    # artist_top_albums
+    artist_group: list[VV_Album] = []
+    if artist_top_results:
+        for x in artist_top_results:
+            # структура top_albums: { name, artist: { name }, image: [...] }
+            artist_name = x.get("artist", {}).get("name") if isinstance(x.get("artist"), dict) else x.get("artist", "")
+            artist_group.append(VV_Album.model_validate({
+                "album_name": x.get("name", ""),
+                "artist_name": artist_name or "",
+                "cover_url": (x.get("image", [])[-1] or {}).get("#text", "") if x.get("image") else "",
+                "cover_url_reserve": (x.get("image", [])[-2] or {}).get("#text", "") if x.get("image") and len(x.get("image")) > 1 else ""
+            }))
+
+    return SearchResults(albums=albums_group, artist_top_albums=artist_group)
 
 
 # TODO: scripts.js: sendAlbumToServer --> вместо дефолтного _id брать логин+пароль из авторизационных данных.

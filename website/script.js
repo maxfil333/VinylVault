@@ -131,11 +131,10 @@ async function deleteAlbumFromServer(album_id) {
 }
 
 
-// Функция для поиска релевантных альбомов ( @app.get("/api/search/albums/{album_name}") )
-async function searchAlbums(albumName) {
-    const url = serverAddress + 'api/search/albums/' + encodeURIComponent(albumName);
+// Функция для поиска релевантных альбомов и топ-альбомов артиста ( /api/search/mixed/{query} )
+async function searchMixed(query) {
+    const url = serverAddress + 'api/search/mixed/' + encodeURIComponent(query);
     console.log(`GET: ${url}`);
-
     const response = await fetch(url);
     return await response.json();
 }
@@ -286,33 +285,70 @@ if (albumList) {
 
 
 // Добавление альбома на витрину при выборе варианта из выпадающего списка найденных альбомов
-function addAlbumBySearch(data) {
-    dropdownMenu.innerHTML = ''; // Очищаем предыдущие варианты
+function addAlbumBySearchGrouped(result) {
+    dropdownMenu.innerHTML = '';
 
-    // data = [{'artist1': .., 'name1': ..}, {'artist2': .., 'name2': ..}]
-    // для каждого элемента из выпадающего списка (найденные в результате поиска альбомы/исполнители):
-    data.forEach((album_search_item) => {
-        const item = document.createElement('div');  // создаём контейнер для варианта (внутри dropdown);
-        item.textContent = `${album_search_item.album_name} — ${album_search_item.artist_name}`;  // текст варианта;
-        item.style.cursor = 'pointer';  // указываем стиль;
+    // helper для рендера группы
+    const renderGroup = (titleText, items) => {
+        const hasItems = Array.isArray(items) && items.length > 0;
+        const header = document.createElement('div');
+        header.textContent = titleText;
+        header.className = 'dropdown-header text-muted';
+        header.style.fontWeight = 'bold';
+        header.style.padding = '6px 12px';
+        dropdownMenu.appendChild(header);
 
-        // добавляем действие при клике:
-        item.addEventListener('click', () => {
+        if (!hasItems) {
+            const empty = document.createElement('div');
+            empty.textContent = 'Нет результатов';
+            empty.className = 'dropdown-item text-muted';
+            dropdownMenu.appendChild(empty);
+            return;
+        }
 
-            const li = createAlbumCard(album_search_item);
+        items.forEach((album) => {
+            const item = document.createElement('div');
+            item.className = 'dropdown-item d-flex align-items-center justify-content-between';
+            item.style.cursor = 'pointer';
 
-            albumList.appendChild(li); // Добавляем в список
-            albumSearchInput.value = ''; // Очищаем поле ввода
-            sendAlbumToServer(album_search_item); // Отправляем альбом на сервер !!!
-            dropdownMenu.style.display = 'none'; // Скрываем меню после выбора
+            const textSpan = document.createElement('span');
+            textSpan.textContent = `${album.album_name} — ${album.artist_name}`;
+            textSpan.style.whiteSpace = 'nowrap';
+            textSpan.style.overflow = 'hidden';
+            textSpan.style.textOverflow = 'ellipsis';
+            textSpan.style.paddingRight = '8px';
+
+            const img = document.createElement('img');
+            const cover = album.cover_url || album.cover_url_reserve || '/static/data/other/unfound.jpg';
+            img.src = cover;
+            img.alt = album.album_name;
+            img.style.width = '32px';
+            img.style.height = '32px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '4px';
+            img.referrerPolicy = 'no-referrer';
+
+            item.appendChild(textSpan);
+            item.appendChild(img);
+
+            item.addEventListener('click', () => {
+                const li = createAlbumCard(album);
+                albumList.appendChild(li);
+                albumSearchInput.value = '';
+                sendAlbumToServer(album);
+                dropdownMenu.style.display = 'none';
+            });
+
+            dropdownMenu.appendChild(item);
         });
+    };
 
-        dropdownMenu.appendChild(item); // Добавляем элемент в меню
-    });
+    renderGroup('Albums', result.albums);
+    renderGroup('Artist\'s top-albums', result.artist_top_albums);
 
-    dropdownMenu.style.display = 'block'; // Показываем меню
-    dropdownMenu.style.left = `${albumSearchInput.offsetLeft}px`; // Позиция по горизонтали
-    dropdownMenu.style.top = `${albumSearchInput.offsetTop + albumSearchInput.offsetHeight}px`; // Позиция по вертикали
+    dropdownMenu.style.display = 'block';
+    dropdownMenu.style.left = `${albumSearchInput.offsetLeft}px`;
+    dropdownMenu.style.top = `${albumSearchInput.offsetTop + albumSearchInput.offsetHeight}px`;
 }
 
 
@@ -332,15 +368,9 @@ searchAlbumBtn.addEventListener('click', async () => {
     }
 
     try {
-        // API call
-        const data = await searchAlbums(albumName);
-
-        if (data.length === 0) {
-            console.log('No albums found.');
-            return;
-        }
-
-        addAlbumBySearch(data);
+        // API call (сгруппированный поиск)
+        const data = await searchMixed(albumName);
+        addAlbumBySearchGrouped(data);
     } catch (error) {
         console.error('Ошибка при поиске альбомов:', error);
     }

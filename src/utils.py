@@ -1,5 +1,6 @@
-import requests
 import os
+import httpx
+import requests
 
 from src.config import URL
 
@@ -14,6 +15,19 @@ def send_request(params: dict) -> dict:
         return data
 
     except requests.exceptions.RequestException as e:
+        return {"error": f"Ошибка запроса: {str(e)}"}
+
+
+async def send_request_async(params: dict) -> dict:
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.get(URL, params=params)
+            response.raise_for_status()
+            data = response.json()
+            if "error" in data:
+                return {"error": data["message"]}
+            return data
+    except httpx.HTTPError as e:
         return {"error": f"Ошибка запроса: {str(e)}"}
 
 

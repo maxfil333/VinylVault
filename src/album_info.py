@@ -1,5 +1,5 @@
 from src.config import API_KEY
-from src.utils import send_request
+from src.utils import send_request, send_request_async
 from pprint import pprint
 
 
@@ -38,6 +38,18 @@ def album_search(album_name: str, api_key: str = API_KEY, limit=5) -> list[dict]
         "format": "json",
     }
     return send_request(params).get('results', {}).get('albummatches', {}).get('album', [])
+
+
+async def album_search_async(album_name: str, api_key: str = API_KEY, limit=5) -> list[dict]:
+    params = {
+        "method": "album.search",
+        "album": album_name,
+        "api_key": api_key,
+        "limit": limit,
+        "format": "json",
+    }
+    data = await send_request_async(params)
+    return data.get('results', {}).get('albummatches', {}).get('album', [])
 
 
 if __name__ == '__main__':

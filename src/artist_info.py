@@ -1,7 +1,7 @@
 from pprint import pprint
 
 from src.config import API_KEY
-from src.utils import send_request
+from src.utils import send_request, send_request_async
 
 
 def artist_info(artist_name: str, api_key: str) -> dict:
@@ -14,7 +14,7 @@ def artist_info(artist_name: str, api_key: str) -> dict:
     return send_request(params).get("artist", {})
 
 
-def artist_top_albums(artist_name: str, api_key: str, limit: int = 5) -> dict:
+def artist_top_albums(artist_name: str, api_key: str = API_KEY, limit: int = 5) -> list[dict]:
     params = {
         "method": "artist.getTopAlbums",
         "artist": artist_name,
@@ -22,7 +22,19 @@ def artist_top_albums(artist_name: str, api_key: str, limit: int = 5) -> dict:
         "api_key": api_key,
         "format": "json",
     }
-    return send_request(params).get("topalbums", {}).get('album')
+    return send_request(params).get("topalbums", {}).get('album', [])
+
+
+async def artist_top_albums_async(artist_name: str, api_key: str = API_KEY, limit: int = 5) -> list[dict]:
+    params = {
+        "method": "artist.getTopAlbums",
+        "artist": artist_name,
+        "limit": limit,
+        "api_key": api_key,
+        "format": "json",
+    }
+    data = await send_request_async(params)
+    return data.get("topalbums", {}).get('album', [])
 
 
 if __name__ == "__main__":

@@ -26,6 +26,11 @@ class VV_Session(BaseModel):
     login_time: datetime
 
 
+class SearchResults(BaseModel):
+    albums: list[VV_Album] = Field(default_factory=list)
+    artist_top_albums: list[VV_Album] = Field(default_factory=list)
+
+
 if __name__ == '__main__':
     user = VV_User(username='user', password='pass', email='abcd@gmail.com')
     print(user)
