@@ -68,7 +68,7 @@ async def get_session_data(
 
 
 @app.post("/register", response_class=HTMLResponse)
-async def register(users_collection: users_collection_dep,
+async def register(users_collection: users_collection_dep, session_cookies: session_cookies_dep,
                    username: str = Form(...), password: str = Form(...), email: EmailStr = Form(...)):
     """ Обработчик регистрации. Принимает данные из HTML-формы и добавляет нового пользователя в базу данных. """
     logger.info("")
@@ -80,12 +80,15 @@ async def register(users_collection: users_collection_dep,
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при регистрации пользователя: {e}")
 
-    # Генерируем страницу для нового пользователя
-    await generate_user_page(user_id=new_user.inserted_id, username=username)
+    # Генерируем страницу для нового пользователя (имя файла совпадает с VV_User.user_id)
+    await generate_user_page(user_id=user.user_id, username=username)
 
-    # Перенаправляем пользователя на его страницу.
-    # Если страница генерируется в виде файла /users/{user_id}.html, то URL может выглядеть так:
-    return RedirectResponse(url=f"/static/data/users/{new_user.inserted_id}.html", status_code=303)
+    # Создаем сессию и устанавливаем cookie, чтобы /me открыл страницу текущего пользователя
+    session_id = generate_session_id()
+    await add_session(collection=session_cookies, session_id=session_id, user=user)
+    response = RedirectResponse(url=f"/me", status_code=303)
+    response.set_cookie(key=SESSION_COOKIES_KEY, value=session_id)
+    return response
 
 
 @app.post("/login")
