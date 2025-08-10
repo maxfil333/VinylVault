@@ -3,7 +3,7 @@ from src.utils import send_request
 from pprint import pprint
 
 
-def get_album_info(artist_name: str, album_name: str, api_key: str = API_KEY) -> dict:
+def album_getinfo(artist_name: str, album_name: str, api_key: str = API_KEY) -> dict:
     """
     Get album by album_name and artist_name
     :param artist_name: Имя артиста
@@ -44,7 +44,7 @@ if __name__ == '__main__':
     artist_name = "Brutus"
     album_name = "Unison life"
 
-    album_data = get_album_info(artist_name, album_name, API_KEY)
+    album_data = album_getinfo(artist_name, album_name, API_KEY)
     pprint(album_data)
 
     print('-' * 70)

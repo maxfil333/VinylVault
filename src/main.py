@@ -13,7 +13,7 @@ from pydantic import EmailStr
 
 from src.models import VV_Album, VV_User
 from src.handlers import PageNotFoundHandler, register_exception_handlers
-from src.album_info import album_search, get_album_info
+from src.album_info import album_search, album_getinfo
 from src.database import vinyl_vault_users, add_user, is_in_collection
 from src.database import session_cookies, add_session
 from src.utils import load_html
@@ -188,7 +188,7 @@ async def add_album(user_id: str, album: VV_Album, users_collection: users_colle
     """
     logger.info("")
 
-    album_info = get_album_info(artist_name=album.artist_name, album_name=album.album_name)['album']
+    album_info = album_getinfo(artist_name=album.artist_name, album_name=album.album_name)['album']
 
     album.cover_url = album_info['image'][-1]['#text']
     album.cover_url_reserve = album_info['image'][-2]['#text']
