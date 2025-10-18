@@ -21,9 +21,25 @@ async def get_db(client: AsyncIOMotorClient, db_name: str) -> AsyncIOMotorDataba
     return db
 
 
-# Создаем константы для клиента и базы данных
-MONGO_CLIENT = asyncio.get_event_loop().run_until_complete(mongo_connect())
-VINYL_VAULT_DB = asyncio.get_event_loop().run_until_complete(get_db(MONGO_CLIENT, 'VinylVault'))
+# Глобальные переменные для клиента и базы данных
+MONGO_CLIENT = None
+VINYL_VAULT_DB = None
+
+
+async def init_database():
+    """Инициализация подключения к MongoDB"""
+    global MONGO_CLIENT, VINYL_VAULT_DB
+    MONGO_CLIENT = await mongo_connect()
+    VINYL_VAULT_DB = await get_db(MONGO_CLIENT, 'VinylVault')
+    logger.info("MongoDB подключение инициализировано")
+
+
+async def close_database():
+    """Закрытие подключения к MongoDB"""
+    global MONGO_CLIENT
+    if MONGO_CLIENT:
+        MONGO_CLIENT.close()
+        logger.info("MongoDB подключение закрыто")
 
 
 async def get_collection(db: AsyncIOMotorDatabase, collection_name: str) -> AsyncIOMotorCollection:
@@ -56,15 +72,20 @@ async def is_in_collection(field: str, value: str, collection: AsyncIOMotorColle
 
 async def vinyl_vault_users() -> AsyncIOMotorCollection:
     logger.info("")
+    if VINYL_VAULT_DB is None:
+        raise RuntimeError("База данных не инициализирована. Вызовите init_database() сначала.")
     return await get_collection(VINYL_VAULT_DB, 'users_collection')
 
 
 async def session_cookies() -> AsyncIOMotorCollection:
     logger.info("")
+    if VINYL_VAULT_DB is None:
+        raise RuntimeError("База данных не инициализирована. Вызовите init_database() сначала.")
     return await get_collection(VINYL_VAULT_DB, 'session_cookies_collection')
 
 
 async def main():
+    await init_database()
     users_collection = await get_collection(VINYL_VAULT_DB, 'users_collection')
     session_cookies_collection = await get_collection(VINYL_VAULT_DB, 'session_cookies_collection')
 

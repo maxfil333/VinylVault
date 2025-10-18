@@ -16,7 +16,7 @@ from src.handlers import PageNotFoundHandler, register_exception_handlers
 from src.album_info import album_search, album_getinfo, album_search_async
 from src.artist_info import artist_top_albums_async
 from src.database import vinyl_vault_users, add_user, is_in_collection
-from src.database import session_cookies, add_session
+from src.database import session_cookies, add_session, init_database, close_database
 from src.utils import load_html
 from src.pages import generate_user_page
 from src.config import WEBSITE_DIR
@@ -40,13 +40,14 @@ session_cookies_dep = Annotated[AsyncIOMotorCollection, Depends(session_cookies)
 
 SESSION_COOKIES_KEY = 'vv_session_cookie'
 
+
 # ___________________________ REGISTER and LOGIN ___________________________
 
 async def verify_login_password(username: str, password: str,
                                 users_collection: users_collection_dep) -> Optional[VV_User]:
     """ Проверяет логин и пароль пользователя и возвращает пользователя из базы данных. """
     logger.info("")
-    if user:= await users_collection.find_one({"username": username, "password": password}):
+    if user := await users_collection.find_one({"username": username, "password": password}):
         return VV_User.model_validate(user)
     raise HTTPException(status_code=401, detail="Invalid login or password")
 
@@ -58,12 +59,12 @@ def generate_session_id() -> str:
 
 
 async def get_session_data(
-        cookies_collection: session_cookies_dep,
-        session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None)
+    cookies_collection: session_cookies_dep,
+    session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None)
 ) -> dict:
     """ Достать информацию по Cookie """
     logger.info(f"получил куку {session_id}")
-    if session:= await cookies_collection.find_one({'session_id': session_id}):
+    if session := await cookies_collection.find_one({'session_id': session_id}):
         return session
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
 
@@ -120,7 +121,7 @@ async def my_page(session_data: dict = Depends(get_session_data)):
         raise HTTPException(status_code=404, detail="Page not found")
 
     headers = {
-        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",  #  запрет на хранение содержимого в кеше
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",  # запрет на хранение содержимого в кеше
         "Pragma": "no-cache",  # устаревший заголовок HTTP/1.0
         "Expires": "0"  # устаревший заголовок HTTP/1.0
     }
@@ -133,6 +134,7 @@ async def my_page(session_data: dict = Depends(get_session_data)):
 async def default_page():
     response = RedirectResponse(url=f"/welcome")
     return response
+
 
 @app.get("/welcome", response_class=HTMLResponse)
 async def welcome_page():
@@ -171,7 +173,8 @@ def search_album(album_name: str):
             "album_name": x.get("name", ""),
             "artist_name": x.get("artist", ""),
             "cover_url": (x.get("image", [])[-1] or {}).get("#text", "") if x.get("image") else "",
-            "cover_url_reserve": (x.get("image", [])[-2] or {}).get("#text", "") if x.get("image") and len(x.get("image")) > 1 else ""
+            "cover_url_reserve": (x.get("image", [])[-2] or {}).get("#text", "") if x.get("image") and len(
+                x.get("image")) > 1 else ""
         }))
     return albums
 
@@ -192,7 +195,8 @@ async def search_mixed(query: str):
             "album_name": x.get("name", ""),
             "artist_name": x.get("artist", ""),
             "cover_url": (x.get("image", [])[-1] or {}).get("#text", "") if x.get("image") else "",
-            "cover_url_reserve": (x.get("image", [])[-2] or {}).get("#text", "") if x.get("image") and len(x.get("image")) > 1 else ""
+            "cover_url_reserve": (x.get("image", [])[-2] or {}).get("#text", "") if x.get("image") and len(
+                x.get("image")) > 1 else ""
         }))
 
     # artist_top_albums
@@ -205,7 +209,8 @@ async def search_mixed(query: str):
                 "album_name": x.get("name", ""),
                 "artist_name": artist_name or "",
                 "cover_url": (x.get("image", [])[-1] or {}).get("#text", "") if x.get("image") else "",
-                "cover_url_reserve": (x.get("image", [])[-2] or {}).get("#text", "") if x.get("image") and len(x.get("image")) > 1 else ""
+                "cover_url_reserve": (x.get("image", [])[-2] or {}).get("#text", "") if x.get("image") and len(
+                    x.get("image")) > 1 else ""
             }))
 
     return SearchResults(albums=albums_group, artist_top_albums=artist_group)
@@ -280,6 +285,9 @@ app.mount("/static", StaticFiles(directory=WEBSITE_DIR))
 
 
 async def setup_app():
+    # Инициализируем подключение к MongoDB
+    await init_database()
+
     # Подключаем Middleware
     users_collection = await vinyl_vault_users()  # Дожидаемся коллекции
     app.add_middleware(PageNotFoundHandler, vinyl_vault_users=users_collection)
@@ -287,13 +295,23 @@ async def setup_app():
 
 
 if __name__ == "__main__":
+    import atexit
+
+
+    async def cleanup():
+        await close_database()
+
+
+    # Регистрируем функцию очистки для выполнения при завершении
+    atexit.register(lambda: asyncio.run(cleanup()))
+
     loop = asyncio.get_event_loop()
     loop.run_until_complete(setup_app())
     uvicorn.run(app)
 
-#todo: редирект с главной на welcome если нет куки, на my если есть куки
+# todo: редирект с главной на welcome если нет куки, на my если есть куки
 
-#todo: https://chatgpt.com/share/686a8248-0344-8010-9dd2-4ef466f31b03
+# todo: https://chatgpt.com/share/686a8248-0344-8010-9dd2-4ef466f31b03
 # /my + удалить из свободного доступа users
 
-#todo: перенести users из website в protected
+# todo: перенести users из website в protected
