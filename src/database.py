@@ -1,5 +1,4 @@
-import asyncio
-import inspect
+from typing import Optional
 from datetime import datetime
 from pymongo.results import InsertOneResult
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
@@ -22,8 +21,8 @@ async def get_db(client: AsyncIOMotorClient, db_name: str) -> AsyncIOMotorDataba
 
 
 # Глобальные переменные для клиента и базы данных
-MONGO_CLIENT = None
-VINYL_VAULT_DB = None
+MONGO_CLIENT: Optional[AsyncIOMotorClient] = None
+VINYL_VAULT_DB: Optional[AsyncIOMotorDatabase]  = None
 
 
 async def init_database():

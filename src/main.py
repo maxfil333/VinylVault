@@ -63,10 +63,20 @@ async def get_session_data(
     session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None)
 ) -> dict:
     """ Достать информацию по Cookie """
-    logger.info(f"получил куку {session_id}")
+    logger.debug(f"Получил куку: {session_id}")
     if session := await cookies_collection.find_one({'session_id': session_id}):
         return session
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
+
+
+async def _cookie_create_and_set(session_cookies: AsyncIOMotorCollection, user: VV_User) -> Response:
+    """ Создаем сессию и устанавливаем cookie, чтобы /me открыл страницу текущего пользователя """
+    session_id = generate_session_id()
+    await add_session(collection=session_cookies, session_id=session_id, user=user)
+    response = RedirectResponse(url=f"/me", status_code=303)
+    response.set_cookie(key=SESSION_COOKIES_KEY, value=session_id)
+    logger.debug(f"Установлена кука: {session_id}")
+    return response
 
 
 @app.post("/register", response_class=HTMLResponse)
@@ -79,32 +89,24 @@ async def register(users_collection: users_collection_dep, session_cookies: sess
         if await is_in_collection(field='username', value=user.username, collection=users_collection):
             raise HTTPException(status_code=409, detail="User already exists")
         new_user = await add_user(users_collection, user)
+        logger.debug(f'New user is created: {new_user}')
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при регистрации пользователя: {e}")
-
     # Генерируем страницу для нового пользователя (имя файла совпадает с VV_User.user_id)
     await generate_user_page(user_id=user.user_id, username=username)
-
     # Создаем сессию и устанавливаем cookie, чтобы /me открыл страницу текущего пользователя
-    session_id = generate_session_id()
-    await add_session(collection=session_cookies, session_id=session_id, user=user)
-    response = RedirectResponse(url=f"/me", status_code=303)
-    response.set_cookie(key=SESSION_COOKIES_KEY, value=session_id)
+    response = await _cookie_create_and_set(session_cookies=session_cookies, user=user)
     return response
 
 
 @app.post("/login")
-async def login(users_collection: users_collection_dep, session_cookies: session_cookies_dep, response: Response,
+async def login(users_collection: users_collection_dep, session_cookies: session_cookies_dep,
                 username: str = Form(...), password: str = Form(...)):
     """ Обработчик логина. Принимает данные из HTML-формы и возвращает пользователя из базы данных. """
     logger.info("")
     user = await verify_login_password(username, password, users_collection)
-    session_id = generate_session_id()
-    session = await add_session(collection=session_cookies, session_id=session_id, user=user)
-    print(f"created cookie: {session}")
-
-    response = RedirectResponse(url=f"/me", status_code=303)
-    response.set_cookie(key=SESSION_COOKIES_KEY, value=session_id)
+    # Создаем сессию и устанавливаем cookie, чтобы /me открыл страницу текущего пользователя
+    response = await _cookie_create_and_set(session_cookies=session_cookies, user=user)
     return response
 
 
