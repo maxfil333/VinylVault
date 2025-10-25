@@ -4,7 +4,7 @@ const serverAddress = 'http://127.0.0.1:8000/'; // URL FastAPI сервера
 
 const albumList = document.getElementById('album-list');
 const albumSearchInput = document.getElementById('album-search');
-const dropdownMenu = document.getElementById('dropdown-menu');
+const dropdownMenu = document.getElementById('lfm_search-dropdown-menu');
 const searchAlbumBtn = document.getElementById('search-album-btn');
 
 

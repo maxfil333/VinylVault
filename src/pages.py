@@ -51,7 +51,7 @@ async  def generate_user_page(user_id: str, username: str):
             <div class="d-flex align-items-center">
                 <div class="position-relative flex-grow-1">
                     <input type="text" id="album-search" class="form-control" placeholder="Название альбома" />
-                    <div id="dropdown-menu" class="dropdown-menu w-100" style="display: none; position: absolute; top: 100%; left: 0;">
+                    <div id="lfm_search-dropdown-menu" class="dropdown-menu w-100" style="display: none; position: absolute; top: 100%; left: 0;">
                         <!-- Варианты для поиска появятся здесь -->
                     </div>
                 </div>
