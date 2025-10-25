@@ -66,7 +66,8 @@ async def get_session_data(
     logger.debug(f"Получил куку: {session_id}")
     if session := await cookies_collection.find_one({'session_id': session_id}):
         return session
-    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
+    else:
+        return {}
 
 
 async def _cookie_create_and_set(session_cookies: AsyncIOMotorCollection, user: VV_User) -> Response:
@@ -116,6 +117,9 @@ async def login(users_collection: users_collection_dep, session_cookies: session
 async def my_page(session_data: dict = Depends(get_session_data)):
     """ Страница пользователя """
     logger.info("")
+
+    if not session_data:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
 
     user_id = session_data["user_id"]
     file_path = os.path.join(WEBSITE_DIR, "data", "users", f"{user_id}.html")
@@ -274,6 +278,9 @@ async def get_user_albums(user_id: str, users_collection: users_collection_dep):
 async def get_current_user_id(session_data: dict = Depends(get_session_data)):
     """ Для запроса с фронта. Возвращает user_id по Cookie"""
     logger.info("")
+
+    if not session_data:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
 
     return {"user_id": session_data["user_id"]}
 
