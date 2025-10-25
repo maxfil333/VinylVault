@@ -121,10 +121,11 @@ async def my_page(session_data: dict = Depends(get_session_data)):
     if not session_data:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
 
-    user_id = session_data["user_id"]
+    user_id, username = session_data["user_id"], session_data["username"]
     file_path = os.path.join(WEBSITE_DIR, "data", "users", f"{user_id}.html")
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Page not found")
+        # Генерируем страницу для нового пользователя (имя файла совпадает с VV_User.user_id)
+        await generate_user_page(user_id=user_id, username=username)
 
     headers = {
         "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",  # запрет на хранение содержимого в кеше
