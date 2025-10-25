@@ -63,8 +63,11 @@ function enableDropdownAutoClose(dropdown, input) {
     function onClickOutside(event) {
         const clickedOnInput = input.contains(event.target);
         const clickedOnDropdown = dropdown.contains(event.target);
+
+        // Если клик не по поисковому полю и не по меню — закрываем и очищаем
         if (!clickedOnInput && !clickedOnDropdown) {
             dropdown.style.display = 'none';
+            input.value = ''; // очищаем поле поиска
         }
     }
 }
