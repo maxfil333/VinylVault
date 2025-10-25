@@ -44,16 +44,35 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
-// Закрытие выпадающего меню при клике по пустому месту
-document.addEventListener('click', (event) => {
-    // Проверяем, что клик не был по полю поиска или выпадающему меню
-    const isClickOnSearchInput = albumSearchInput && albumSearchInput.contains(event.target);
-    const isClickOnDropdown = LfmSearchDropdownMenu && LfmSearchDropdownMenu.contains(event.target);
-
-    // Если клик был не по полю поиска и не по выпадающему меню, закрываем меню
-    if (!isClickOnSearchInput && !isClickOnDropdown && LfmSearchDropdownMenu) {
-        LfmSearchDropdownMenu.style.display = 'none';
+// Закрытие выпадающего меню при клике вне него
+function enableDropdownAutoClose(dropdown, input) {
+    if (!dropdown || !input) return;
+    let isMenuOpen = false;
+    // Перехватываем открытие меню
+    const observer = new MutationObserver(() => {
+        const visible = dropdown.style.display !== 'none';
+        if (visible && !isMenuOpen) {
+            document.addEventListener('click', onClickOutside, true);
+            isMenuOpen = true;
+        } else if (!visible && isMenuOpen) {
+            document.removeEventListener('click', onClickOutside, true);
+            isMenuOpen = false;
+        }
+    });
+    observer.observe(dropdown, { attributes: true, attributeFilter: ['style'] });
+    function onClickOutside(event) {
+        const clickedOnInput = input.contains(event.target);
+        const clickedOnDropdown = dropdown.contains(event.target);
+        if (!clickedOnInput && !clickedOnDropdown) {
+            dropdown.style.display = 'none';
+        }
     }
+}
+
+
+// Закрытие выпадающего меню при клике вне него (инициализация после загрузки DOM)
+document.addEventListener('DOMContentLoaded', () => {
+    enableDropdownAutoClose(LfmSearchDropdownMenu, albumSearchInput);
 });
 
 
