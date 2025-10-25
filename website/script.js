@@ -4,7 +4,7 @@ const serverAddress = 'http://127.0.0.1:8000/'; // URL FastAPI сервера
 
 const albumList = document.getElementById('album-list');
 const albumSearchInput = document.getElementById('album-search');
-const dropdownMenu = document.getElementById('lfm_search-dropdown-menu');
+const LfmSearchDropdownMenu = document.getElementById('lfm_search-dropdown-menu');
 const searchAlbumBtn = document.getElementById('search-album-btn');
 
 
@@ -40,6 +40,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.style.transform = 'scale(1)';
             }
         });
+    }
+});
+
+
+// Закрытие выпадающего меню при клике по пустому месту
+document.addEventListener('click', (event) => {
+    // Проверяем, что клик не был по полю поиска или выпадающему меню
+    const isClickOnSearchInput = albumSearchInput && albumSearchInput.contains(event.target);
+    const isClickOnDropdown = LfmSearchDropdownMenu && LfmSearchDropdownMenu.contains(event.target);
+
+    // Если клик был не по полю поиска и не по выпадающему меню, закрываем меню
+    if (!isClickOnSearchInput && !isClickOnDropdown && LfmSearchDropdownMenu) {
+        LfmSearchDropdownMenu.style.display = 'none';
     }
 });
 
@@ -286,7 +299,7 @@ if (albumList) {
 
 // Добавление альбома на витрину при выборе варианта из выпадающего списка найденных альбомов
 function addAlbumBySearchGrouped(result) {
-    dropdownMenu.innerHTML = '';
+    LfmSearchDropdownMenu.innerHTML = '';
 
     // helper для рендера группы
     const renderGroup = (titleText, items) => {
@@ -296,13 +309,13 @@ function addAlbumBySearchGrouped(result) {
         header.className = 'dropdown-header text-muted';
         header.style.fontWeight = 'bold';
         header.style.padding = '6px 12px';
-        dropdownMenu.appendChild(header);
+        LfmSearchDropdownMenu.appendChild(header);
 
         if (!hasItems) {
             const empty = document.createElement('div');
             empty.textContent = 'Нет результатов';
             empty.className = 'dropdown-item text-muted';
-            dropdownMenu.appendChild(empty);
+            LfmSearchDropdownMenu.appendChild(empty);
             return;
         }
 
@@ -336,19 +349,19 @@ function addAlbumBySearchGrouped(result) {
                 albumList.appendChild(li);
                 albumSearchInput.value = '';
                 sendAlbumToServer(album);
-                dropdownMenu.style.display = 'none';
+                LfmSearchDropdownMenu.style.display = 'none';
             });
 
-            dropdownMenu.appendChild(item);
+            LfmSearchDropdownMenu.appendChild(item);
         });
     };
 
     renderGroup('Albums', result.albums);
     renderGroup('Artist\'s top-albums', result.artist_top_albums);
 
-    dropdownMenu.style.display = 'block';
-    dropdownMenu.style.left = `${albumSearchInput.offsetLeft}px`;
-    dropdownMenu.style.top = `${albumSearchInput.offsetTop + albumSearchInput.offsetHeight}px`;
+    LfmSearchDropdownMenu.style.display = 'block';
+    LfmSearchDropdownMenu.style.left = `${albumSearchInput.offsetLeft}px`;
+    LfmSearchDropdownMenu.style.top = `${albumSearchInput.offsetTop + albumSearchInput.offsetHeight}px`;
 }
 
 
