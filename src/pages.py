@@ -45,8 +45,17 @@ async  def generate_user_page(user_id: str, username: str):
     
     <!-- Блок с альбомами -->
     <div class="container my-4 pt-5">
-        <h2 class="text-center text-danger" style="font-family: Barlow;">Top Albums</h2>
-    
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="text-center text-danger" style="font-family: Barlow;">Top Albums</h2>
+            <div class="edit-controls">
+                <button id="edit-btn" class="btn btn-outline-primary">Edit</button>
+                <div id="save-cancel-controls" style="display: none;">
+                    <button id="save-btn" class="btn btn-success me-2">Save</button>
+                    <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
+                </div>
+            </div>
+        </div>
+
         <div class="mb-3 position-relative">
             <div class="d-flex align-items-center">
                 <div class="position-relative flex-grow-1">
@@ -58,7 +67,7 @@ async  def generate_user_page(user_id: str, username: str):
                 <button id="search-album-btn" class="btn ms-2 text-bg-danger" style="white-space: nowrap;">Найти</button>
             </div>
         </div>
-    
+
         <div>
             <ul id="album-list" class="row list-unstyled g-3">
                 <!-- Здесь будут храниться альбомы -->

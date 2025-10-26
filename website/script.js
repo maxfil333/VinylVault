@@ -7,6 +7,17 @@ const albumSearchInput = document.getElementById('album-search');
 const LfmSearchDropdownMenu = document.getElementById('lfm_search-dropdown-menu');
 const searchAlbumBtn = document.getElementById('search-album-btn');
 
+// Элементы для редактирования
+const editBtn = document.getElementById('edit-btn');
+const saveBtn = document.getElementById('save-btn');
+const cancelBtn = document.getElementById('cancel-btn');
+const saveCancelControls = document.getElementById('save-cancel-controls');
+
+// Переменные для режима редактирования
+let isEditMode = false;
+let originalOrder = [];
+let draggedElement = null;
+
 
 //---------------------------------------------------------------------------------------------------------------- UTILS
 
@@ -219,6 +230,17 @@ function createAlbumCard(album) {
     li.dataset.albumId = album.album_id;
     li.dataset.albumName = album.album_name;
     li.dataset.artistName = album.artist_name;
+    
+    // Если мы в режиме редактирования, делаем элемент перетаскиваемым
+    if (isEditMode) {
+        li.draggable = true;
+        li.addEventListener('dragstart', handleDragStart);
+        li.addEventListener('dragend', handleDragEnd);
+        li.addEventListener('dragover', handleDragOver);
+        li.addEventListener('drop', handleDrop);
+        li.addEventListener('dragenter', handleDragEnter);
+        li.addEventListener('dragleave', handleDragLeave);
+    }
 
     // Создаем карточку
     const cardDiv = document.createElement('div');
@@ -410,3 +432,178 @@ searchAlbumBtn.addEventListener('click', async () => {
         console.error('Ошибка при поиске альбомов:', error);
     }
 });
+
+//----------------------------------------------------------------------------------------------------------- РЕЖИМ РЕДАКТИРОВАНИЯ
+
+// Функция для включения режима редактирования
+function enableEditMode() {
+    isEditMode = true;
+    editBtn.style.display = 'none';
+    saveCancelControls.style.display = 'flex';
+    
+    // Сохраняем оригинальный порядок
+    originalOrder = Array.from(albumList.children).map(li => ({
+        albumId: li.dataset.albumId,
+        element: li
+    }));
+    
+    // Добавляем класс edit-mode к контейнеру альбомов
+    albumList.classList.add('edit-mode');
+    
+    // Делаем альбомы перетаскиваемыми
+    makeAlbumsDraggable();
+}
+
+// Функция для отключения режима редактирования
+function disableEditMode() {
+    isEditMode = false;
+    editBtn.style.display = 'block';
+    saveCancelControls.style.display = 'none';
+    
+    // Убираем класс edit-mode
+    albumList.classList.remove('edit-mode');
+    
+    // Убираем drag-and-drop функциональность
+    removeDragAndDrop();
+}
+
+// Функция для создания drag-and-drop функциональности
+function makeAlbumsDraggable() {
+    const albumItems = albumList.querySelectorAll('li');
+    
+    albumItems.forEach(item => {
+        item.draggable = true;
+        
+        item.addEventListener('dragstart', handleDragStart);
+        item.addEventListener('dragend', handleDragEnd);
+        item.addEventListener('dragover', handleDragOver);
+        item.addEventListener('drop', handleDrop);
+        item.addEventListener('dragenter', handleDragEnter);
+        item.addEventListener('dragleave', handleDragLeave);
+    });
+}
+
+// Функция для удаления drag-and-drop функциональности
+function removeDragAndDrop() {
+    const albumItems = albumList.querySelectorAll('li');
+    
+    albumItems.forEach(item => {
+        item.draggable = false;
+        item.removeEventListener('dragstart', handleDragStart);
+        item.removeEventListener('dragend', handleDragEnd);
+        item.removeEventListener('dragover', handleDragOver);
+        item.removeEventListener('drop', handleDrop);
+        item.removeEventListener('dragenter', handleDragEnter);
+        item.removeEventListener('dragleave', handleDragLeave);
+    });
+}
+
+// Обработчики drag-and-drop событий
+function handleDragStart(e) {
+    draggedElement = this;
+    this.classList.add('dragging');
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/html', this.outerHTML);
+}
+
+function handleDragEnd(e) {
+    this.classList.remove('dragging');
+    draggedElement = null;
+    
+    // Убираем все drag-over классы
+    const albumItems = albumList.querySelectorAll('li');
+    albumItems.forEach(item => item.classList.remove('drag-over'));
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    if (this !== draggedElement) {
+        this.classList.add('drag-over');
+    }
+}
+
+function handleDragLeave(e) {
+    this.classList.remove('drag-over');
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    this.classList.remove('drag-over');
+    
+    if (this !== draggedElement) {
+        // Вставляем перетаскиваемый элемент перед текущим
+        albumList.insertBefore(draggedElement, this);
+    }
+}
+
+// Функция для сохранения нового порядка
+async function saveAlbumOrder() {
+    const user_id = await getUserIdFromSession();
+    if (!user_id) {
+        console.error('user_id не найден в cookie!');
+        return;
+    }
+    
+    // Получаем новый порядок альбомов
+    const newOrder = Array.from(albumList.children).map((li, index) => ({
+        album_id: li.dataset.albumId,
+        order: index
+    }));
+    
+    const requestOptions = {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(newOrder),
+    };
+    
+    const url = `${serverAddress}api/users/${user_id}/albums/reorder/`;
+    
+    try {
+        const response = await fetch(url, requestOptions);
+        if (!response.ok) {
+            throw new Error(`Ошибка: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('Порядок альбомов сохранен:', data);
+        
+        // Отключаем режим редактирования
+        disableEditMode();
+        
+    } catch (error) {
+        console.error('Ошибка при сохранении порядка альбомов:', error);
+        alert('Не удалось сохранить порядок альбомов');
+    }
+}
+
+// Функция для отмены изменений
+function cancelEdit() {
+    // Восстанавливаем оригинальный порядок
+    albumList.innerHTML = '';
+    originalOrder.forEach(item => {
+        albumList.appendChild(item.element);
+    });
+    
+    // Отключаем режим редактирования
+    disableEditMode();
+}
+
+// Обработчики событий для кнопок редактирования
+if (editBtn) {
+    editBtn.addEventListener('click', enableEditMode);
+}
+
+if (saveBtn) {
+    saveBtn.addEventListener('click', saveAlbumOrder);
+}
+
+if (cancelBtn) {
+    cancelBtn.addEventListener('click', cancelEdit);
+}

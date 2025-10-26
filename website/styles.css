@@ -71,3 +71,51 @@ body.login-page::before {
 .card:hover .delete-album-button {
     opacity: 1;
 }
+
+/* Стили для режима редактирования */
+.edit-mode .card {
+    cursor: move;
+    opacity: 0.7;
+    transition: opacity 0.3s ease;
+}
+
+.edit-mode .card:hover {
+    opacity: 1;
+}
+
+.edit-mode .delete-album-button {
+    opacity: 1;
+}
+
+.edit-mode .card-body {
+    pointer-events: none;
+}
+
+.edit-mode .image-container {
+    pointer-events: none;
+}
+
+/* Стили для drag-and-drop */
+.dragging {
+    opacity: 0.5;
+    transform: rotate(5deg);
+    z-index: 1000;
+}
+
+.drag-over {
+    border: 2px dashed #007bff;
+    background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* Стили для кнопок редактирования */
+.edit-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+#save-cancel-controls {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}

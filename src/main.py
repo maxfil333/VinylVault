@@ -233,7 +233,8 @@ async def add_album(user_id: str, album: VV_Album, users_collection: users_colle
         1) инициализирует объект VV_Album (из параметров id, artist, album)
         2) находит через api доп. информацию по альбому
         3) добавляет к VV_Album найденную информацию (cover urls)
-        4) добавляет альбом в DB
+        4) устанавливает порядок альбома (последний в списке)
+        5) добавляет альбом в DB
     """
     logger.info("")
 
@@ -241,6 +242,11 @@ async def add_album(user_id: str, album: VV_Album, users_collection: users_colle
 
     album.cover_url = album_info['image'][-1]['#text']
     album.cover_url_reserve = album_info['image'][-2]['#text']
+
+    # Получаем текущее количество альбомов пользователя для установки порядка
+    user = await users_collection.find_one({"user_id": user_id})
+    current_album_count = len(user.get("albums", [])) if user else 0
+    album.order = current_album_count
 
     await users_collection.update_one(
         filter={"user_id": user_id},
@@ -265,14 +271,46 @@ async def delete_album(user_id: str, album_id: str, users_collection: users_coll
 
 @app.get("/api/users/{user_id}/albums/all/", response_model=list[VV_Album])
 async def get_user_albums(user_id: str, users_collection: users_collection_dep):
-    """ Возвращает список альбомов пользователя из базы """
+    """ Возвращает список альбомов пользователя из базы, отсортированных по порядку """
     logger.info(f"{user_id=}")
 
     user: dict = await users_collection.find_one({"user_id": user_id})
 
     if user:
-        return VV_User.model_validate(user).albums
+        albums = VV_User.model_validate(user).albums
+        # Сортируем альбомы по полю order
+        albums.sort(key=lambda x: x.order)
+        return albums
     return []
+
+
+@app.put("/api/users/{user_id}/albums/reorder/")
+async def reorder_albums(user_id: str, album_orders: list[dict], users_collection: users_collection_dep):
+    """ Обновляет порядок альбомов пользователя """
+    logger.info(f"Reordering albums for user {user_id}")
+    
+    # Валидируем входные данные
+    if not album_orders:
+        raise HTTPException(status_code=400, detail="Список порядков альбомов не может быть пустым")
+    
+    # Обновляем порядок каждого альбома
+    for album_order in album_orders:
+        album_id = album_order.get("album_id")
+        new_order = album_order.get("order")
+        
+        if album_id is None or new_order is None:
+            raise HTTPException(status_code=400, detail="Неверный формат данных: требуется album_id и order")
+        
+        # Обновляем порядок конкретного альбома
+        result = await users_collection.update_one(
+            filter={"user_id": user_id, "albums.album_id": album_id},
+            update={"$set": {"albums.$.order": new_order}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail=f"Альбом с ID {album_id} не найден")
+    
+    return {"message": "Порядок альбомов успешно обновлен"}
 
 
 @app.get("/api/me/userid")

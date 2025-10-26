@@ -9,6 +9,7 @@ class VV_Album(BaseModel):
     artist_name: str
     cover_url: str = ''
     cover_url_reserve: str = ''
+    order: int = 0  # Порядок альбома в коллекции пользователя
 
 
 class VV_User(BaseModel):
