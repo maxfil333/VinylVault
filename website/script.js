@@ -483,6 +483,9 @@ function makeAlbumsDraggable() {
     });
 }
 
+// Переменная для отслеживания текущей целевой позиции
+let currentTargetIndex = -1;
+
 // Функция для удаления drag-and-drop функциональности
 function removeDragAndDrop() {
     const albumItems = albumList.querySelectorAll('li');
@@ -504,20 +507,54 @@ function handleDragStart(e) {
     this.classList.add('dragging');
     e.dataTransfer.effectAllowed = 'move';
     e.dataTransfer.setData('text/html', this.outerHTML);
+    
+    // Сохраняем текущую позицию перетаскиваемого элемента
+    currentTargetIndex = Array.from(albumList.children).indexOf(draggedElement);
 }
 
 function handleDragEnd(e) {
     this.classList.remove('dragging');
-    draggedElement = null;
     
     // Убираем все drag-over классы
     const albumItems = albumList.querySelectorAll('li');
     albumItems.forEach(item => item.classList.remove('drag-over'));
+    
+    draggedElement = null;
+    currentTargetIndex = -1;
 }
 
 function handleDragOver(e) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    
+    if (this !== draggedElement && this.tagName === 'LI') {
+        const targetIndex = Array.from(albumList.children).indexOf(this);
+        
+        // Если позиция изменилась, перемещаем элементы в реальном времени
+        if (currentTargetIndex !== targetIndex && currentTargetIndex !== -1) {
+            currentTargetIndex = targetIndex;
+            
+            // Создаем временную коллекцию элементов для безопасного перемещения
+            const children = Array.from(albumList.children);
+            const draggedIndex = children.indexOf(draggedElement);
+            
+            // Удаляем перетаскиваемый элемент из DOM
+            draggedElement.remove();
+            
+            // Вставляем его на новую позицию
+            if (draggedIndex < targetIndex) {
+                // Перетаскиваем вниз
+                if (targetIndex < children.length - 1) {
+                    albumList.insertBefore(draggedElement, children[targetIndex + 1]);
+                } else {
+                    albumList.appendChild(draggedElement);
+                }
+            } else {
+                // Перетаскиваем вверх
+                albumList.insertBefore(draggedElement, this);
+            }
+        }
+    }
 }
 
 function handleDragEnter(e) {
@@ -539,22 +576,7 @@ function handleDrop(e) {
     e.preventDefault();
     this.classList.remove('drag-over');
     
-    // Проверяем, что перетаскивание происходит на карточку (li элемент)
-    if (this !== draggedElement && this.tagName === 'LI') {
-        // Меняем местами перетаскиваемый элемент и текущий
-        const draggedNextSibling = draggedElement.nextSibling;
-        const thisNextSibling = this.nextSibling;
-        
-        // Вставляем перетаскиваемый элемент на место текущего
-        albumList.insertBefore(draggedElement, this);
-        
-        // Вставляем текущий элемент на место перетаскиваемого
-        if (draggedNextSibling) {
-            albumList.insertBefore(this, draggedNextSibling);
-        } else {
-            albumList.appendChild(this);
-        }
-    }
+    // Финализируем позицию (элемент уже перемещен в handleDragOver)
 }
 
 // Функция для сохранения нового порядка
