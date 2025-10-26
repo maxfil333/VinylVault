@@ -522,22 +522,38 @@ function handleDragOver(e) {
 
 function handleDragEnter(e) {
     e.preventDefault();
-    if (this !== draggedElement) {
+    // Проверяем, что перетаскивание происходит над карточкой (li элементом)
+    if (this !== draggedElement && this.tagName === 'LI') {
         this.classList.add('drag-over');
     }
 }
 
 function handleDragLeave(e) {
-    this.classList.remove('drag-over');
+    // Убираем рамку только если мы действительно покидаем элемент
+    if (!this.contains(e.relatedTarget)) {
+        this.classList.remove('drag-over');
+    }
 }
 
 function handleDrop(e) {
     e.preventDefault();
     this.classList.remove('drag-over');
     
-    if (this !== draggedElement) {
-        // Вставляем перетаскиваемый элемент перед текущим
+    // Проверяем, что перетаскивание происходит на карточку (li элемент)
+    if (this !== draggedElement && this.tagName === 'LI') {
+        // Меняем местами перетаскиваемый элемент и текущий
+        const draggedNextSibling = draggedElement.nextSibling;
+        const thisNextSibling = this.nextSibling;
+        
+        // Вставляем перетаскиваемый элемент на место текущего
         albumList.insertBefore(draggedElement, this);
+        
+        // Вставляем текущий элемент на место перетаскиваемого
+        if (draggedNextSibling) {
+            albumList.insertBefore(this, draggedNextSibling);
+        } else {
+            albumList.appendChild(this);
+        }
     }
 }
 
