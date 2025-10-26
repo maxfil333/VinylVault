@@ -48,10 +48,10 @@ async  def generate_user_page(user_id: str, username: str):
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="text-center text-danger" style="font-family: Barlow;">Top Albums</h2>
             <div class="edit-controls">
-                <button id="edit-btn" class="btn btn-outline-primary">Edit</button>
+                <button id="edit-btn" class="btn ms-2 btn-outline-primary" style="white-space: nowrap; min-width: 80px;">Edit</button>
                 <div id="save-cancel-controls" style="display: none;">
-                    <button id="save-btn" class="btn btn-success me-2">Save</button>
-                    <button id="cancel-btn" class="btn btn-secondary">Cancel</button>
+                    <button id="save-btn" class="btn btn-success" style="white-space: nowrap; min-width: 80px;">Save</button>
+                    <button id="cancel-btn" class="btn btn-secondary ms-2" style="white-space: nowrap; min-width: 80px;">Cancel</button>
                 </div>
             </div>
         </div>
@@ -64,7 +64,7 @@ async  def generate_user_page(user_id: str, username: str):
                         <!-- Варианты для поиска появятся здесь -->
                     </div>
                 </div>
-                <button id="search-album-btn" class="btn ms-2 text-bg-danger" style="white-space: nowrap;">Найти</button>
+                <button id="search-album-btn" class="btn ms-2 text-bg-danger" style="white-space: nowrap; min-width: 80px;">Найти</button>
             </div>
         </div>
 
