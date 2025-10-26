@@ -126,7 +126,7 @@ body.login-page::before {
     gap: 10px;
 }
 
-/* Эффект при наведении на кнопку "Найти" */
+/* Эффект при наведении на кнопку "Explore" */
 #search-album-btn {
     position: relative;
     overflow: visible;

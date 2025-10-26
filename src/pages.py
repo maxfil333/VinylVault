@@ -64,7 +64,7 @@ async  def generate_user_page(user_id: str, username: str):
                         <!-- Варианты для поиска появятся здесь -->
                     </div>
                 </div>
-                <button id="search-album-btn" class="btn ms-2 text-bg-danger" style="white-space: nowrap; min-width: 80px;">Найти</button>
+                <button id="search-album-btn" class="btn ms-2 text-bg-danger" style="white-space: nowrap; min-width: 80px;">Explore</button>
             </div>
         </div>
 
