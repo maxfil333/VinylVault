@@ -283,6 +283,7 @@ function createAlbumCard(album) {
     deleteButton.style.top = '5px';
     deleteButton.style.left = '5px';
     deleteButton.textContent = '❌';
+    deleteButton.style.display = isEditMode ? 'block' : 'none'; // Скрываем кнопку по умолчанию
     deleteButton.onclick = (event) => {
         event.stopPropagation(); // Останавливаем всплытие события
         li.remove(); // Удаляем элемент из DOM
@@ -415,6 +416,9 @@ function enableEditMode() {
     
     // Делаем альбомы перетаскиваемыми
     makeAlbumsDraggable();
+    
+    // Показываем кнопки удаления
+    showDeleteButtons();
 }
 
 // Функция для отключения режима редактирования
@@ -428,6 +432,9 @@ function disableEditMode() {
     
     // Убираем drag-and-drop функциональность
     removeDragAndDrop();
+    
+    // Скрываем кнопки удаления
+    hideDeleteButtons();
 }
 
 // Функция для создания drag-and-drop функциональности
@@ -443,6 +450,22 @@ function makeAlbumsDraggable() {
         item.addEventListener('drop', handleDrop);
         item.addEventListener('dragenter', handleDragEnter);
         item.addEventListener('dragleave', handleDragLeave);
+    });
+}
+
+// Функция для показа кнопок удаления
+function showDeleteButtons() {
+    const deleteButtons = albumList.querySelectorAll('.delete-album-button');
+    deleteButtons.forEach(button => {
+        button.style.display = 'block';
+    });
+}
+
+// Функция для скрытия кнопок удаления
+function hideDeleteButtons() {
+    const deleteButtons = albumList.querySelectorAll('.delete-album-button');
+    deleteButtons.forEach(button => {
+        button.style.display = 'none';
     });
 }
 
