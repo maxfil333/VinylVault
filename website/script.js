@@ -304,43 +304,6 @@ function createAlbumCard(album) {
 }
 
 
-// Удаление альбома по клику (DOM + СЕРВЕР)
-if (albumList) {
-    albumList.addEventListener('click', (event) => {
-        const target = event.target;
-        // Проверяем, что клик был по элементу <li>
-        if (target.tagName === 'LI') {
-            // Получаем данные из атрибутов data-*
-            const albumName = target.dataset.albumName;
-            const artistName = target.dataset.artistName;
-            const albumId = target.dataset.albumId
-
-            // Проверяем, что данные присутствуют
-            if (!albumName || !artistName) {
-                console.error('Не удалось удалить альбом: отсутствует albumName или artistName');
-                return;
-            }
-
-            // Удаляем элемент из DOM
-            target.remove();
-
-            // Удаляем альбом на сервере
-            deleteAlbumFromServer(albumId)
-                .then(() => {
-                    console.log(`Альбом ${albumName} от ${artistName} успешно удалён с сервера`);
-                })
-                .catch((error) => {
-                    console.error('Ошибка при удалении альбома на сервере:', error);
-                    // Опционально: вернуть элемент в DOM при ошибке
-                    // albumList.appendChild(target);
-                });
-        }
-    });
-} else {
-    console.warn('Элемент albumList не найден в DOM');
-}
-
-
 // Добавление альбома на витрину при выборе варианта из выпадающего списка найденных альбомов
 function addAlbumBySearchGrouped(result) {
     LfmSearchDropdownMenu.innerHTML = '';
@@ -433,7 +396,7 @@ searchAlbumBtn.addEventListener('click', async () => {
     }
 });
 
-//----------------------------------------------------------------------------------------------------------- РЕЖИМ РЕДАКТИРОВАНИЯ
+//------------------------------------------------------------------------------------------------- РЕЖИМ РЕДАКТИРОВАНИЯ
 
 // Функция для включения режима редактирования
 function enableEditMode() {
