@@ -353,6 +353,18 @@ if __name__ == "__main__":
     # Регистрируем функцию очистки для выполнения при завершении
     atexit.register(lambda: asyncio.run(cleanup()))
 
+    # ___ DEBUG ___
+    import glob
+
+
+    def cleanup_users():
+        for f in glob.glob('../website/data/users/*.html'):
+            os.unlink(f)
+
+
+    atexit.register(lambda: cleanup_users())
+    # ___ DEBUG ___
+
     loop = asyncio.new_event_loop()
     loop.run_until_complete(setup_app())
     uvicorn.run(app)
