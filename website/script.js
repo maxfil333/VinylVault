@@ -21,6 +21,9 @@ let draggedElement = null;
 
 //---------------------------------------------------------------------------------------------------------------- UTILS
 
+// Флаг для отслеживания программных кликов кнопки поиска
+let isSearchButtonClick = false;
+
 function logRequestDetails(method, url, headers, body) {
     console.log('>>> logging >>>')
     console.log(`${method}: Метод:`, method);
@@ -72,11 +75,17 @@ function enableDropdownAutoClose(dropdown, input) {
     });
     observer.observe(dropdown, { attributes: true, attributeFilter: ['style'] });
     function onClickOutside(event) {
+        // Если был программный клик кнопки поиска, игнорируем это событие
+        if (isSearchButtonClick) {
+            return;
+        }
+        
         const clickedOnInput = input.contains(event.target);
         const clickedOnDropdown = dropdown.contains(event.target);
+        const clickedOnSearchBtn = searchAlbumBtn && searchAlbumBtn.contains(event.target);
 
-        // Если клик не по поисковому полю и не по меню — закрываем и очищаем
-        if (!clickedOnInput && !clickedOnDropdown) {
+        // Если клик не по поисковому полю, не по кнопке поиска и не по меню — закрываем и очищаем
+        if (!clickedOnInput && !clickedOnDropdown && !clickedOnSearchBtn) {
             dropdown.style.display = 'none';
             input.value = ''; // очищаем поле поиска
         }
@@ -378,6 +387,7 @@ function addAlbumBySearchGrouped(result) {
 // PRESS ENTER
 albumSearchInput.addEventListener('keydown', function (event) {
     if (event.key === 'Enter') {
+        isSearchButtonClick = true; // Устанавливаем флаг перед программным кликом
         searchAlbumBtn.click();
     }
 });
@@ -392,8 +402,17 @@ searchAlbumBtn.addEventListener('click', async () => {
         // API call (сгруппированный поиск)
         const data = await searchMixed(albumName);
         addAlbumBySearchGrouped(data);
+        
+        // Сбрасываем флаг после завершения поиска
+        setTimeout(() => {
+            isSearchButtonClick = false;
+        }, 0);
     } catch (error) {
         console.error('Ошибка при поиске альбомов:', error);
+        // Сбрасываем флаг даже при ошибке
+        setTimeout(() => {
+            isSearchButtonClick = false;
+        }, 0);
     }
 });
 
