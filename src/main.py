@@ -61,17 +61,14 @@ def generate_session_id() -> str:
 async def get_session_data(
     session_cookies_collection: session_cookies_dep,
     session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None),
-    mode: Literal['strict', 'soft'] = 'soft',
 ) -> dict:
-    """Получить информацию о сессии по Cookie."""
+    """ Получить информацию о сессии по Cookie """
     logger.debug(f"Получил куку: {session_id!r}")
     if not session_id:
-        if mode == 'strict':
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Not authenticated"
-            )
-        return {}
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated"
+        )
     session = await session_cookies_collection.find_one({'session_id': session_id})
     return session or {}
 
@@ -233,7 +230,12 @@ async def search_mixed(query: str):
 #  add_album.users_collection.update_one делать только если юзер с таким логин+пароль существует
 
 @app.post("/api/users/{user_id}/albums/add/")
-async def add_album(user_id: str, album: VV_Album, users_collection: users_collection_dep):
+async def add_album(
+    user_id: str,
+    album: VV_Album,
+    users_collection: users_collection_dep,
+    session_data: dict = Depends(get_session_data),
+):
     """
         Добавляет альбом в базу пользователя:
         1) инициализирует объект VV_Album (из параметров id, artist, album)
@@ -243,6 +245,10 @@ async def add_album(user_id: str, album: VV_Album, users_collection: users_colle
         5) добавляет альбом в DB
     """
     logger.info("")
+
+    # Проверяем, что user_id из URL соответствует user_id из сессии
+    if session_data.get("user_id") != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     album_info = album_getinfo(artist_name=album.artist_name, album_name=album.album_name)['album']
 
@@ -262,9 +268,18 @@ async def add_album(user_id: str, album: VV_Album, users_collection: users_colle
 
 
 @app.delete("/api/users/{user_id}/albums/delete/{album_id}")
-async def delete_album(user_id: str, album_id: str, users_collection: users_collection_dep):
+async def delete_album(
+    user_id: str,
+    album_id: str,
+    users_collection: users_collection_dep,
+    session_data: dict = Depends(get_session_data),
+):
     """ Удаляет альбом из базы пользователя """
     logger.info("")
+
+    # Проверяем, что user_id из URL соответствует user_id из сессии
+    if session_data.get("user_id") != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     result = await users_collection.update_one(
         filter={"user_id": user_id},
@@ -276,9 +291,17 @@ async def delete_album(user_id: str, album_id: str, users_collection: users_coll
 
 
 @app.get("/api/users/{user_id}/albums/all/", response_model=list[VV_Album])
-async def get_user_albums(user_id: str, users_collection: users_collection_dep):
+async def get_user_albums(
+    user_id: str,
+    users_collection: users_collection_dep,
+    session_data: dict = Depends(get_session_data),
+):
     """ Возвращает список альбомов пользователя из базы, отсортированных по порядку """
     logger.info(f"{user_id=}")
+
+    # Проверяем, что user_id из URL соответствует user_id из сессии
+    if session_data.get("user_id") != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
 
     user: dict = await users_collection.find_one({"user_id": user_id})
 
@@ -291,9 +314,18 @@ async def get_user_albums(user_id: str, users_collection: users_collection_dep):
 
 
 @app.put("/api/users/{user_id}/albums/reorder/")
-async def reorder_albums(user_id: str, album_orders: list[dict], users_collection: users_collection_dep):
+async def reorder_albums(
+    user_id: str,
+    album_orders: list[dict],
+    users_collection: users_collection_dep,
+    session_data: dict = Depends(get_session_data),
+):
     """ Обновляет порядок альбомов пользователя """
-    logger.info(f"Reordering albums for user {user_id}")
+    logger.info(f"Reordering albums for user_id: {user_id!r}")
+
+    # Проверяем, что user_id из URL соответствует user_id из сессии
+    if session_data.get("user_id") != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
     
     # Валидируем входные данные
     if not album_orders:
