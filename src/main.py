@@ -3,7 +3,7 @@ import time
 import uuid
 import uvicorn
 import asyncio
-from typing import Annotated, Optional
+from typing import Annotated, Optional, Literal
 from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
@@ -60,14 +60,20 @@ def generate_session_id() -> str:
 
 async def get_session_data(
     session_cookies_collection: session_cookies_dep,
-    session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None)
+    session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None),
+    mode: Literal['strict', 'soft'] = 'soft',
 ) -> dict:
-    """ Достать информацию по Cookie """
-    logger.debug(f"Получил куку: {session_id}")
+    """Получить информацию о сессии по Cookie."""
+    logger.debug(f"Получил куку: {session_id!r}")
     if not session_id:
+        if mode == 'strict':
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Not authenticated"
+            )
         return {}
     session = await session_cookies_collection.find_one({'session_id': session_id})
-    return session
+    return session or {}
 
 
 async def _cookie_create_and_set(session_cookies: AsyncIOMotorCollection, user: VV_User) -> Response:
@@ -76,7 +82,7 @@ async def _cookie_create_and_set(session_cookies: AsyncIOMotorCollection, user: 
     await add_session(collection=session_cookies, session_id=session_id, user=user)
     response = RedirectResponse(url=f"/me", status_code=303)
     response.set_cookie(key=SESSION_COOKIES_KEY, value=session_id)
-    logger.debug(f"Установлена кука: {session_id}")
+    logger.debug(f"Установлена кука: {session_id!r}")
     return response
 
 
