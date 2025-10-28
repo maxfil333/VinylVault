@@ -59,14 +59,14 @@ def generate_session_id() -> str:
 
 
 async def get_session_data(
-    cookies_collection: session_cookies_dep,
+    session_cookies_collection: session_cookies_dep,
     session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None)
 ) -> dict:
     """ Достать информацию по Cookie """
     logger.debug(f"Получил куку: {session_id}")
     if not session_id:
         return {}
-    session = await cookies_collection.find_one({'session_id': session_id})
+    session = await session_cookies_collection.find_one({'session_id': session_id})
     return session
 
 
