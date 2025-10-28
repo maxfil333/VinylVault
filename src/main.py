@@ -64,10 +64,10 @@ async def get_session_data(
 ) -> dict:
     """ Достать информацию по Cookie """
     logger.debug(f"Получил куку: {session_id}")
-    if session := await cookies_collection.find_one({'session_id': session_id}):
-        return session
-    else:
+    if not session_id:
         return {}
+    session = await cookies_collection.find_one({'session_id': session_id})
+    return session
 
 
 async def _cookie_create_and_set(session_cookies: AsyncIOMotorCollection, user: VV_User) -> Response:
