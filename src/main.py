@@ -41,7 +41,7 @@ session_cookies_dep = Annotated[AsyncIOMotorCollection, Depends(session_cookies)
 SESSION_COOKIES_KEY = 'vv_session_cookie'
 
 
-# ___________________________ REGISTER and LOGIN ___________________________
+# ___________________________ REGISTER | LOGIN | LOGOUT ___________________________
 
 async def verify_login_password(username: str, password: str,
                                 users_collection: users_collection_dep) -> Optional[VV_User]:
@@ -111,6 +111,22 @@ async def login(users_collection: users_collection_dep, session_cookies: session
     user = await verify_login_password(username, password, users_collection)
     # Создаем сессию и устанавливаем cookie, чтобы /me открыл страницу текущего пользователя
     response = await _cookie_create_and_set(session_cookies=session_cookies, user=user)
+    return response
+
+
+@app.post("/logout")
+async def logout(session_cookies: session_cookies_dep,
+                 session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None)):
+    """ Выход пользователя: удаляет сессию из базы данных и очищает cookie """
+    logger.info("")
+    if session_id:
+        # Удаляем сессию из базы данных
+        await session_cookies.delete_one({'session_id': session_id})
+        logger.debug(f"Удалена сессия: {session_id!r}")
+
+    # Создаем ответ с редиректом на welcome и очищаем cookie
+    response = RedirectResponse(url="/welcome", status_code=303)
+    response.delete_cookie(key=SESSION_COOKIES_KEY)
     return response
 
 
@@ -349,6 +365,21 @@ async def reorder_albums(
             raise HTTPException(status_code=404, detail=f"Альбом с ID {album_id} не найден")
     
     return {"message": "Порядок альбомов успешно обновлен"}
+
+
+@app.get("/api/auth/check")
+async def check_auth(
+    session_cookies_collection: session_cookies_dep,
+    session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None),
+):
+    """ Проверяет статус авторизации пользователя. Возвращает is_authenticated: true/false """
+    logger.debug(f"Проверка авторизации: {session_id!r}")
+    if not session_id:
+        return {"is_authenticated": False}
+    session = await session_cookies_collection.find_one({'session_id': session_id})
+    if session:
+        return {"is_authenticated": True}
+    return {"is_authenticated": False}
 
 
 @app.get("/api/me/userid")

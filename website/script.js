@@ -228,6 +228,75 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
+//--------------------------------------------------------------------------------------------------------- WELCOME PAGE
+
+// Проверка авторизации и обновление UI на welcome странице
+async function checkAuthAndUpdateUI() {
+    const authButtons = document.getElementById('auth-buttons');
+    const userButtons = document.getElementById('user-buttons');
+    
+    // Если элементов нет на странице, выходим
+    if (!authButtons || !userButtons) {
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/auth/check', {
+            credentials: 'include'
+        });
+        const data = await response.json();
+        
+        if (data.is_authenticated) {
+            // Пользователь авторизован - показываем кнопки ME и Log Out
+            authButtons.style.display = 'none';
+            userButtons.style.display = 'flex';
+        } else {
+            // Пользователь не авторизован - показываем кнопки Log In и SIGN UP
+            authButtons.style.display = 'flex';
+            userButtons.style.display = 'none';
+        }
+    } catch (error) {
+        console.error('Ошибка при проверке авторизации:', error);
+        // В случае ошибки показываем кнопки для неавторизованных
+        authButtons.style.display = 'flex';
+        userButtons.style.display = 'none';
+    }
+}
+
+// Обработчик кнопки Log Out
+function setupLogoutButton() {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok || response.redirected) {
+                    // Перенаправляем на welcome страницу
+                    window.location.href = '/welcome';
+                }
+            } catch (error) {
+                console.error('Ошибка при выходе:', error);
+            }
+        });
+    }
+}
+
+// Инициализация welcome страницы
+document.addEventListener("DOMContentLoaded", async () => {
+    // Проверяем, есть ли элементы welcome страницы
+    const authButtons = document.getElementById('auth-buttons');
+    const userButtons = document.getElementById('user-buttons');
+    if (authButtons && userButtons) {
+        // Это welcome страница - проверяем авторизацию и настраиваем кнопки
+        await checkAuthAndUpdateUI();
+        setupLogoutButton();
+    }
+});
+
 //------------------------------------------------------------------------------------------------------------- ОСНОВНЫЕ
 
 // Создание карточки альбома
