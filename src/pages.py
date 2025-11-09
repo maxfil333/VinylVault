@@ -28,7 +28,7 @@ async  def generate_user_page(user_id: str, username: str):
             </a>
             <div class="collapse navbar-collapse justify-content-end" id="mynavbar">
                 <form class="d-flex">
-                    <a class="btn btn-danger me-2" type="button">My profile</a>
+                    <button id="logout-btn" class="btn btn-outline-danger" type="button">Log Out</button>
                 </form>
             </div>
         </div>

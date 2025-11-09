@@ -213,6 +213,28 @@ async function loadUserAlbums(userId) {
     }
 }
 
+// Обработчик кнопки Log Out
+function setupLogoutButton() {
+    const logoutBtn = document.getElementById('logout-btn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                const response = await fetch('/logout', {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                
+                if (response.ok || response.redirected) {
+                    // Перенаправляем на welcome страницу
+                    window.location.href = '/welcome';
+                }
+            } catch (error) {
+                console.error('Ошибка при выходе:', error);
+            }
+        });
+    }
+}
+
 // ... вызов функции при загрузке страницы
 document.addEventListener("DOMContentLoaded", async () => {
     const pageType = document.querySelector("meta[name='page-type']")?.content;
@@ -225,6 +247,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
         }
         loadUserAlbums(userId);
+        setupLogoutButton();
     }
 });
 
@@ -260,28 +283,6 @@ async function checkAuthAndUpdateUI() {
         // В случае ошибки показываем кнопки для неавторизованных
         authButtons.style.display = 'flex';
         userButtons.style.display = 'none';
-    }
-}
-
-// Обработчик кнопки Log Out
-function setupLogoutButton() {
-    const logoutBtn = document.getElementById('logout-btn');
-    if (logoutBtn) {
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                const response = await fetch('/logout', {
-                    method: 'POST',
-                    credentials: 'include'
-                });
-                
-                if (response.ok || response.redirected) {
-                    // Перенаправляем на welcome страницу
-                    window.location.href = '/welcome';
-                }
-            } catch (error) {
-                console.error('Ошибка при выходе:', error);
-            }
-        });
     }
 }
 
