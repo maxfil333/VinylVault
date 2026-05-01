@@ -3,6 +3,7 @@ import time
 import uuid
 import uvicorn
 import asyncio
+from contextlib import asynccontextmanager
 from typing import Annotated, Optional, Literal
 from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, Response
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,7 +23,15 @@ from src.pages import generate_user_page
 from src.config import WEBSITE_DIR
 from src.logger import logger
 
-app = FastAPI()
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await init_database()
+    app.state.users_collection = await vinyl_vault_users()
+    yield
+    await close_database()
+
+
+app = FastAPI(lifespan=lifespan)
 register_exception_handlers(app)
 
 # uvicorn src.main:app --reload
@@ -39,6 +48,8 @@ users_collection_dep = Annotated[AsyncIOMotorCollection, Depends(vinyl_vault_use
 session_cookies_dep = Annotated[AsyncIOMotorCollection, Depends(session_cookies)]
 
 SESSION_COOKIES_KEY = 'vv_session_cookie'
+
+app.add_middleware(PageNotFoundHandler)
 
 
 # ___________________________ REGISTER | LOGIN | LOGOUT ___________________________
@@ -407,7 +418,7 @@ async def setup_app():
 
     # Подключаем Middleware
     users_collection = await vinyl_vault_users()  # Дожидаемся коллекции
-    app.add_middleware(PageNotFoundHandler, vinyl_vault_users=users_collection)
+    app.state.users_collection = users_collection
     return app
 
 
