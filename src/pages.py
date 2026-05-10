@@ -40,10 +40,9 @@ async  def generate_user_page(user_id: str, username: str):
         <div class="position-absolute d-flex flex-column align-items-center" style="bottom: 0; transform: translateY(50%); z-index: 2;">
             <img id="user-avatar" src="/static/data/avatars/avatar1.jpg" alt="Аватар"
                  class="rounded-circle"
-                 style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;"
-                 title="Нажмите, чтобы сменить фото">
+                 style="width: 150px; height: 150px; object-fit: cover; cursor: default;">
             <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp,image/gif" class="d-none">
-            <button type="button" id="avatar-change-btn" class="btn btn-sm btn-outline-light mt-2">Сменить фото</button>
+            <button type="button" id="avatar-change-btn" class="btn btn-sm btn-outline-light mt-2" style="display: none;">Сменить фото</button>
         </div>
         <span id="profile-username" class="font-family: Barlow text-white position-absolute" style="bottom: 5px; margin-left: 250px; z-index: 1;">{username}</span>
     </div>

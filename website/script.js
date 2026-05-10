@@ -138,6 +138,16 @@ async function uploadAvatar(file) {
     return await response.json();
 }
 
+function setAvatarEditVisible(show) {
+    const img = document.getElementById('user-avatar');
+    const btn = document.getElementById('avatar-change-btn');
+    if (btn) btn.style.display = show ? 'inline-block' : 'none';
+    if (img) {
+        img.style.cursor = show ? 'pointer' : 'default';
+        img.title = show ? 'Нажмите, чтобы сменить фото' : '';
+    }
+}
+
 function setupAvatarControls() {
     const img = document.getElementById('user-avatar');
     const input = document.getElementById('avatar-input');
@@ -146,7 +156,12 @@ function setupAvatarControls() {
 
     const pickFile = () => input.click();
     if (btn) btn.addEventListener('click', pickFile);
-    img.addEventListener('click', pickFile);
+    img.addEventListener('click', () => {
+        if (!isEditMode) return;
+        pickFile();
+    });
+
+    setAvatarEditVisible(false);
 
     input.addEventListener('change', async () => {
         const file = input.files && input.files[0];
@@ -578,6 +593,8 @@ function enableEditMode() {
     
     // Показываем кнопки удаления
     showDeleteButtons();
+
+    setAvatarEditVisible(true);
 }
 
 // Функция для отключения режима редактирования
@@ -594,6 +611,8 @@ function disableEditMode() {
     
     // Скрываем кнопки удаления
     hideDeleteButtons();
+
+    setAvatarEditVisible(false);
 }
 
 // Функция для создания drag-and-drop функциональности
