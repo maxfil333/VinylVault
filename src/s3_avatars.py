@@ -1,17 +1,19 @@
-"""Загрузка аватаров в Selectel S3; раздача по публичному CDN-домену (s3_base_domain)."""
+"""Аватары в Selectel S3: дефолт в other/, загрузки пользователей в avatars/{user_id}.ext."""
 
 from __future__ import annotations
+
+import re
 
 import boto3
 from botocore.exceptions import ClientError
 
 from src.config import cfg
 
-DEFAULT_AVATAR_KEY = "avatars/default_avatar.jpg"
-USER_AVATAR_PREFIX = "user_avatars"
+# Ключи в бакете (корень CDN = s3_base_domain)
+DEFAULT_AVATAR_KEY = "other/default_avatar.jpg"
+USER_AVATAR_PREFIX = "avatars"
 _USER_AVATAR_EXTS = (".jpg", ".png", ".webp", ".gif")
 
-# Расширение файла (нижний регистр) → Content-Type для S3
 AVATAR_EXT_TO_CONTENT_TYPE: dict[str, str] = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
@@ -20,7 +22,13 @@ AVATAR_EXT_TO_CONTENT_TYPE: dict[str, str] = {
     ".gif": "image/gif",
 }
 
-LEGACY_STATIC_DEFAULT_AVATAR = "/static/data/avatars/default_avatar.jpg"
+LEGACY_STATIC_DEFAULT_AVATARS = frozenset(
+    {
+        "/static/data/avatars/default_avatar.jpg",
+        "/static/data/other/default_avatar.jpg",
+    }
+)
+_LEGACY_STATIC_USER_AVATAR = re.compile(r"^/static/data/user_avatars/(.+)$")
 
 
 def _s3_client():
@@ -44,13 +52,35 @@ def default_avatar_public_url() -> str:
     return public_url_for_key(DEFAULT_AVATAR_KEY)
 
 
+def normalize_stored_avatar_url(stored: str) -> str:
+    """Старые CDN-пути: .../data/... → без data/; user_avatars → avatars; старый дефолт avatars/default_avatar.jpg → other/."""
+    s = stored.strip()
+    base = _public_base()
+    data_seg = f"{base}/data/"
+    if s.startswith("http") and data_seg in s:
+        s = s.replace(data_seg, f"{base}/")
+    if "/user_avatars/" in s:
+        s = s.replace("/user_avatars/", "/avatars/")
+    if s.startswith("http") and (
+        s.rstrip("/").endswith("/avatars/default_avatar.jpg")
+        or "/avatars/default_avatar.jpg?" in s
+    ):
+        return default_avatar_public_url()
+    return s
+
+
 def coalesce_avatar_url(stored: str | None) -> str:
-    """None или устаревший путь к дефолту на диске → публичный URL дефолта в CDN."""
+    """None, устаревшие /static/... и нормализация старых CDN-URL."""
     if not stored:
         return default_avatar_public_url()
     s = stored.strip()
-    if s == LEGACY_STATIC_DEFAULT_AVATAR:
+    if s in LEGACY_STATIC_DEFAULT_AVATARS:
         return default_avatar_public_url()
+    if s.startswith("http://") or s.startswith("https://"):
+        return normalize_stored_avatar_url(s)
+    m = _LEGACY_STATIC_USER_AVATAR.match(s)
+    if m:
+        return public_url_for_key(f"{USER_AVATAR_PREFIX}/{m.group(1)}")
     return s
 
 
@@ -80,7 +110,6 @@ def upload_user_avatar_to_s3(user_id: str, file_bytes: bytes, content_type: str,
 
 
 def upload_public_bytes(key: str, file_bytes: bytes, content_type: str) -> str:
-    """Публичный объект (например дефолтный аватар). Возвращает URL."""
     client = _s3_client()
     client.put_object(
         Bucket=cfg.s3_bucket,

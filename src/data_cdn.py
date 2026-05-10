@@ -1,4 +1,4 @@
-"""Публичные ассеты из website/data/* в S3 (ключи data/...). HTML-страницы пользователей — только на диске (data/users/)."""
+"""Статика website/data/{avatars,backgrounds,other} в S3 без префикса data/ (ключи other/..., avatars/..., backgrounds/...)."""
 
 from __future__ import annotations
 
@@ -20,19 +20,18 @@ def _s3_client():
 
 
 def data_asset_public_url(relative_under_data: str) -> str:
-    """relative_under_data: 'other/logo.png' — путь относительно каталога website/data/."""
+    """relative_under_data: 'other/logo.png' — относительно website/data/. URL = base/other/logo.png."""
     rel = relative_under_data.lstrip("/").replace("\\", "/")
     base = cfg.s3_base_domain.rstrip("/")
-    return f"{base}/data/{rel}"
+    return f"{base}/{rel}"
 
 
 def s3_key_for_data_file(relative_under_data: str) -> str:
     rel = relative_under_data.lstrip("/").replace("\\", "/")
-    return f"data/{rel}"
+    return rel
 
 
 def upload_data_file(local_file: Path, relative_under_data: str) -> str:
-    """Заливает файл в S3 с ACL public-read. relative_under_data — как для data_asset_public_url."""
     key = s3_key_for_data_file(relative_under_data)
     content_type, _ = mimetypes.guess_type(local_file.name)
     if not content_type:
@@ -48,7 +47,6 @@ def upload_data_file(local_file: Path, relative_under_data: str) -> str:
 
 
 def build_vv_theme_css() -> str:
-    """CSS-переменные для фонов (подключается до styles.css)."""
     bg = data_asset_public_url("backgrounds/back1.jpg")
     loading = data_asset_public_url("other/loading.jpg")
     return f""":root {{
@@ -59,7 +57,6 @@ def build_vv_theme_css() -> str:
 
 
 def html_inject_cdn_head() -> str:
-    """Скрипт для script.js + theme (до основного styles.css)."""
     unfound = data_asset_public_url("other/unfound.jpg")
     base = cfg.s3_base_domain.rstrip("/")
     return (
@@ -70,7 +67,6 @@ def html_inject_cdn_head() -> str:
 
 
 def patch_html_with_cdn_assets(html: str) -> str:
-    """Логотип и инъекция CDN в <head> (перед link на styles.css)."""
     logo = data_asset_public_url("other/VVlogo_solo_cr.png")
     sample_avatar = data_asset_public_url("avatars/avatar1.jpg")
     pairs = [

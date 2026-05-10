@@ -1,10 +1,6 @@
-"""Миграция локальных аватаров в S3 и обновление ссылок в MongoDB.
+"""Дефолтный аватар (other/), локальные user_avatars → avatars/, правка legacy URL в MongoDB.
 
-Запуск из корня проекта (с активированным .venv):
-
-    python -m src.migrate_avatars_to_s3
-
-Шаги: дефолтный аватар → файлы в website/data/user_avatars/ → документы с legacy URL в БД.
+Запуск: python -m src.migrate_avatars_to_s3
 """
 
 from __future__ import annotations
@@ -18,20 +14,31 @@ from src.database import close_database, init_database, vinyl_vault_users
 from src.s3_avatars import (
     AVATAR_EXT_TO_CONTENT_TYPE,
     DEFAULT_AVATAR_KEY,
-    LEGACY_STATIC_DEFAULT_AVATAR,
+    LEGACY_STATIC_DEFAULT_AVATARS,
     default_avatar_public_url,
+    normalize_stored_avatar_url,
     upload_public_bytes,
     upload_user_avatar_to_s3,
 )
 
 USER_AVATARS_DIR: Path = cfg.WEBSITE_DIR / "data" / "user_avatars"
-_LEGACY_USER_AVATAR_RE = re.compile(r"^/static/data/user_avatars/(.+)$")
+_LEGACY_STATIC_USER = re.compile(r"^/static/data/user_avatars/(.+)$")
+
+
+def _default_avatar_local_path() -> Path | None:
+    other_p = cfg.WEBSITE_DIR / "data" / "other" / "default_avatar.jpg"
+    if other_p.is_file():
+        return other_p
+    legacy = cfg.WEBSITE_DIR / "data" / "avatars" / "default_avatar.jpg"
+    if legacy.is_file():
+        return legacy
+    return None
 
 
 async def _migrate_default() -> None:
-    path = cfg.WEBSITE_DIR / "data" / "avatars" / "default_avatar.jpg"
-    if not path.is_file():
-        print(f"[skip] нет файла дефолтного аватара: {path}")
+    path = _default_avatar_local_path()
+    if not path:
+        print("[skip] нет default_avatar.jpg в data/other/ или data/avatars/")
         return
     url = await asyncio.to_thread(
         upload_public_bytes,
@@ -39,7 +46,7 @@ async def _migrate_default() -> None:
         path.read_bytes(),
         "image/jpeg",
     )
-    print(f"[ok] дефолтный аватар в S3: {url}")
+    print(f"[ok] дефолтный аватар в S3 ({path.relative_to(cfg.WEBSITE_DIR)}): {url}")
 
 
 async def _migrate_local_files(coll) -> None:
@@ -72,7 +79,7 @@ async def _migrate_legacy_db_urls(coll) -> None:
     async for doc in cursor:
         owner_id = doc.get("user_id")
         raw = (doc.get("avatar_url") or "").strip()
-        m = _LEGACY_USER_AVATAR_RE.match(raw)
+        m = _LEGACY_STATIC_USER.match(raw)
         if not m:
             continue
         fname = m.group(1)
@@ -98,16 +105,30 @@ async def _migrate_legacy_db_urls(coll) -> None:
             ext,
         )
         await coll.update_one({"user_id": owner_id}, {"$set": {"avatar_url": url}})
-        print(f"[ok] legacy URL пользователя {owner_id} -> {url}")
+        print(f"[ok] legacy /static/... пользователя {owner_id} -> {url}")
 
 
-async def _normalize_static_default_in_db(coll) -> None:
-    result = await coll.update_many(
-        {"avatar_url": LEGACY_STATIC_DEFAULT_AVATAR},
-        {"$set": {"avatar_url": default_avatar_public_url()}},
-    )
-    if result.modified_count:
-        print(f"[ok] заменён устаревший дефолт /static/... в БД: {result.modified_count} док.")
+async def _normalize_static_defaults_in_db(coll) -> None:
+    for legacy in LEGACY_STATIC_DEFAULT_AVATARS:
+        result = await coll.update_many(
+            {"avatar_url": legacy},
+            {"$set": {"avatar_url": default_avatar_public_url()}},
+        )
+        if result.modified_count:
+            print(f"[ok] заменён {legacy!r} в БД: {result.modified_count} док.")
+
+
+async def _rewrite_cdn_avatar_urls_in_db(coll) -> None:
+    """Переписать в Mongo старые https URL: /data/, user_avatars/, avatars/default_avatar.jpg."""
+    cursor = coll.find({"avatar_url": {"$regex": "^https?://"}})
+    async for doc in cursor:
+        raw = (doc.get("avatar_url") or "").strip()
+        if not raw:
+            continue
+        final = normalize_stored_avatar_url(raw)
+        if final != raw:
+            await coll.update_one({"user_id": doc["user_id"]}, {"$set": {"avatar_url": final}})
+            print(f"[ok] CDN URL пользователя {doc.get('user_id')}: обновлён")
 
 
 async def main() -> None:
@@ -117,7 +138,8 @@ async def main() -> None:
         await _migrate_default()
         await _migrate_local_files(coll)
         await _migrate_legacy_db_urls(coll)
-        await _normalize_static_default_in_db(coll)
+        await _normalize_static_defaults_in_db(coll)
+        await _rewrite_cdn_avatar_urls_in_db(coll)
         print("Готово.")
     finally:
         await close_database()

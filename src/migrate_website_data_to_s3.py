@@ -1,9 +1,7 @@
-"""Загрузка содержимого website/data/ в S3 (префикс ключей data/...).
+"""Загрузка website/data/{avatars,backgrounds,other} в S3 (те же ключи: avatars/..., backgrounds/..., other/...).
 
-Не переносится (осознанно):
-  - data/users/ — генерируемые HTML страницы профиля, сессии, пересборка на /me;
-  - data/user_avatars/ — пользовательские аватары уже в S3 (префикс user_avatars/);
-  - data/avatars/default_avatar.jpg — тот же файл, что avatars/default_avatar.jpg в migrate_avatars_to_s3.
+Не заливается: users/, user_avatars/ (HTML и пользовательские аватары — отдельно).
+Не заливается файл avatars/default_avatar.jpg с диска — канонический дефолт в other/default_avatar.jpg.
 
 Запуск: python -m src.migrate_website_data_to_s3
 """
@@ -17,10 +15,10 @@ from src.config import cfg
 from src.data_cdn import upload_data_file
 
 DATA_ROOT: Path = cfg.WEBSITE_DIR / "data"
-# Каталоги не заливаем как объекты; users — HTML на сервере; user_avatars — отдельная схема S3.
+ONLY_TOP = frozenset({"avatars", "backgrounds", "other"})
 SKIP_TOP_LEVEL_DIRS = frozenset({"users", "user_avatars"})
-# Дубликат дефолтного аватара (уже под ключом avatars/default_avatar.jpg).
-_DEFAULT_AVATAR_DUP = "avatars/default_avatar.jpg"
+# Старый путь дефолта на диске — не дублировать в S3 под avatars/
+_SKIP_DISK_DEFAULT_IN_AVATARS = "avatars/default_avatar.jpg"
 
 
 async def main() -> None:
@@ -34,14 +32,16 @@ async def main() -> None:
         rel = path.relative_to(DATA_ROOT)
         if rel.parts and rel.parts[0] in SKIP_TOP_LEVEL_DIRS:
             continue
-        rel_posix = rel.as_posix()
-        if rel_posix.replace("\\", "/") == _DEFAULT_AVATAR_DUP:
-            print(f"[skip] дубликат дефолтного аватара: {rel_posix}")
+        if rel.parts and rel.parts[0] not in ONLY_TOP:
+            continue
+        rel_posix = rel.as_posix().replace("\\", "/")
+        if rel_posix == _SKIP_DISK_DEFAULT_IN_AVATARS:
+            print(f"[skip] дефолт только из other/default_avatar.jpg: {rel_posix}")
             continue
         url = await asyncio.to_thread(upload_data_file, path, rel_posix)
         print(f"[ok] {rel_posix} -> {url}")
 
-    print("Готово (data/* в S3, кроме users/ и user_avatars/).")
+    print("Готово (avatars, backgrounds, other → S3).")
 
 
 if __name__ == "__main__":
