@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import re
+from typing import Any
 
-import boto3
 from botocore.exceptions import ClientError
 
 from src.config import cfg
+from src.s3_async import s3_client
 
 # Ключи в бакете (корень CDN = s3_base_domain)
 DEFAULT_AVATAR_KEY = "other/default_avatar.jpg"
@@ -29,15 +30,6 @@ LEGACY_STATIC_DEFAULT_AVATARS = frozenset(
     }
 )
 _LEGACY_STATIC_USER_AVATAR = re.compile(r"^/static/data/user_avatars/(.+)$")
-
-
-def _s3_client():
-    return boto3.client(
-        "s3",
-        endpoint_url=cfg.s3_endpoint,
-        aws_access_key_id=cfg.s3_access_key,
-        aws_secret_access_key=cfg.s3_secret_key,
-    )
 
 
 def _public_base() -> str:
@@ -84,38 +76,37 @@ def coalesce_avatar_url(stored: str | None) -> str:
     return s
 
 
-def _delete_user_avatar_variants(user_id: str) -> None:
-    client = _s3_client()
+async def _delete_user_avatar_variants(client: Any, user_id: str) -> None:
     for ext in _USER_AVATAR_EXTS:
         key = f"{USER_AVATAR_PREFIX}/{user_id}{ext}"
         try:
-            client.delete_object(Bucket=cfg.s3_bucket, Key=key)
+            await client.delete_object(Bucket=cfg.s3_bucket, Key=key)
         except ClientError:
             pass
 
 
-def upload_user_avatar_to_s3(user_id: str, file_bytes: bytes, content_type: str, ext: str) -> str:
+async def upload_user_avatar_to_s3(user_id: str, file_bytes: bytes, content_type: str, ext: str) -> str:
     """Удаляет прежние объекты аватара пользователя, загружает новый, возвращает публичный URL."""
-    _delete_user_avatar_variants(user_id)
     key = f"{USER_AVATAR_PREFIX}/{user_id}{ext}"
-    client = _s3_client()
-    client.put_object(
-        Bucket=cfg.s3_bucket,
-        Key=key,
-        Body=file_bytes,
-        ContentType=content_type,
-        ACL="public-read",
-    )
+    async with s3_client() as client:
+        await _delete_user_avatar_variants(client, user_id)
+        await client.put_object(
+            Bucket=cfg.s3_bucket,
+            Key=key,
+            Body=file_bytes,
+            ContentType=content_type,
+            ACL="public-read",
+        )
     return public_url_for_key(key)
 
 
-def upload_public_bytes(key: str, file_bytes: bytes, content_type: str) -> str:
-    client = _s3_client()
-    client.put_object(
-        Bucket=cfg.s3_bucket,
-        Key=key,
-        Body=file_bytes,
-        ContentType=content_type,
-        ACL="public-read",
-    )
+async def upload_public_bytes(key: str, file_bytes: bytes, content_type: str) -> str:
+    async with s3_client() as client:
+        await client.put_object(
+            Bucket=cfg.s3_bucket,
+            Key=key,
+            Body=file_bytes,
+            ContentType=content_type,
+            ACL="public-read",
+        )
     return public_url_for_key(key)

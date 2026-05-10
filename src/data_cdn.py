@@ -5,18 +5,8 @@ from __future__ import annotations
 import mimetypes
 from pathlib import Path
 
-import boto3
-
 from src.config import cfg
-
-
-def _s3_client():
-    return boto3.client(
-        "s3",
-        endpoint_url=cfg.s3_endpoint,
-        aws_access_key_id=cfg.s3_access_key,
-        aws_secret_access_key=cfg.s3_secret_key,
-    )
+from src.s3_async import s3_client
 
 
 def data_asset_public_url(relative_under_data: str) -> str:
@@ -31,18 +21,20 @@ def s3_key_for_data_file(relative_under_data: str) -> str:
     return rel
 
 
-def upload_data_file(local_file: Path, relative_under_data: str) -> str:
+async def upload_data_file(local_file: Path, relative_under_data: str) -> str:
     key = s3_key_for_data_file(relative_under_data)
     content_type, _ = mimetypes.guess_type(local_file.name)
     if not content_type:
         content_type = "application/octet-stream"
-    _s3_client().put_object(
-        Bucket=cfg.s3_bucket,
-        Key=key,
-        Body=local_file.read_bytes(),
-        ContentType=content_type,
-        ACL="public-read",
-    )
+    body = local_file.read_bytes()
+    async with s3_client() as client:
+        await client.put_object(
+            Bucket=cfg.s3_bucket,
+            Key=key,
+            Body=body,
+            ContentType=content_type,
+            ACL="public-read",
+        )
     return data_asset_public_url(relative_under_data)
 
 

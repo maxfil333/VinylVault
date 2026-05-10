@@ -468,13 +468,7 @@ async def upload_user_avatar(
         raise HTTPException(status_code=400, detail="Файл больше 5 МБ")
 
     ext = AVATAR_ALLOWED_TYPES[content_type]
-    avatar_url = await asyncio.to_thread(
-        upload_user_avatar_to_s3,
-        user_id,
-        data,
-        content_type,
-        ext,
-    )
+    avatar_url = await upload_user_avatar_to_s3(user_id, data, content_type, ext)
     await users_collection.update_one(
         {"user_id": user_id},
         {"$set": {"avatar_url": avatar_url}},

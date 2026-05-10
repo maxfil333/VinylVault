@@ -38,7 +38,7 @@ async def main() -> None:
         if rel_posix == _SKIP_DISK_DEFAULT_IN_AVATARS:
             print(f"[skip] дефолт только из other/default_avatar.jpg: {rel_posix}")
             continue
-        url = await asyncio.to_thread(upload_data_file, path, rel_posix)
+        url = await upload_data_file(path, rel_posix)
         print(f"[ok] {rel_posix} -> {url}")
 
     print("Готово (avatars, backgrounds, other → S3).")

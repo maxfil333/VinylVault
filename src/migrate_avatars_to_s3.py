@@ -40,8 +40,7 @@ async def _migrate_default() -> None:
     if not path:
         print("[skip] нет default_avatar.jpg в data/other/ или data/avatars/")
         return
-    url = await asyncio.to_thread(
-        upload_public_bytes,
+    url = await upload_public_bytes(
         DEFAULT_AVATAR_KEY,
         path.read_bytes(),
         "image/jpeg",
@@ -63,13 +62,7 @@ async def _migrate_local_files(coll) -> None:
         user_id = path.stem
         data = path.read_bytes()
         content_type = AVATAR_EXT_TO_CONTENT_TYPE[ext]
-        url = await asyncio.to_thread(
-            upload_user_avatar_to_s3,
-            user_id,
-            data,
-            content_type,
-            ext,
-        )
+        url = await upload_user_avatar_to_s3(user_id, data, content_type, ext)
         result = await coll.update_one({"user_id": user_id}, {"$set": {"avatar_url": url}})
         print(f"[ok] {path.name} -> {url} (matched={result.matched_count})")
 
@@ -97,13 +90,7 @@ async def _migrate_legacy_db_urls(coll) -> None:
             print(f"[warn] {owner_id}: плохое расширение {fname}, в БД -> дефолт CDN")
             continue
         data = local.read_bytes()
-        url = await asyncio.to_thread(
-            upload_user_avatar_to_s3,
-            owner_id,
-            data,
-            content_type,
-            ext,
-        )
+        url = await upload_user_avatar_to_s3(owner_id, data, content_type, ext)
         await coll.update_one({"user_id": owner_id}, {"$set": {"avatar_url": url}})
         print(f"[ok] legacy /static/... пользователя {owner_id} -> {url}")
 
