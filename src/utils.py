@@ -2,12 +2,12 @@ import os
 import httpx
 import requests
 
-from src.config import URL
+from src.config import cfg
 
 
 def send_request(params: dict) -> dict:
     try:
-        response = requests.get(URL, params=params)
+        response = requests.get(cfg.URL, params=params)
         response.raise_for_status()  # Вызывает исключение для статусов ошибок HTTP
         data = response.json()
         if "error" in data:
@@ -21,7 +21,7 @@ def send_request(params: dict) -> dict:
 async def send_request_async(params: dict) -> dict:
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.get(URL, params=params)
+            response = await client.get(cfg.URL, params=params)
             response.raise_for_status()
             data = response.json()
             if "error" in data:

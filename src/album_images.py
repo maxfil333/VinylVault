@@ -2,7 +2,7 @@ import os
 import requests
 from urllib.parse import urlparse
 
-from src.config import API_KEY
+from src.config import cfg
 
 
 def get_artist_albums(artist_name, api_key) -> dict:
@@ -83,7 +83,7 @@ if __name__ == "__main__":
     artist_name = "Brutus"
     output_dir = "../album_covers"
 
-    albums = get_artist_albums(artist_name, API_KEY)
+    albums = get_artist_albums(artist_name, cfg.API_KEY)
     if "error" in albums:
         print(f"Ошибка: {albums['error']}")
     else:

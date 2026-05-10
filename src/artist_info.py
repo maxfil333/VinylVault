@@ -1,6 +1,6 @@
 from pprint import pprint
 
-from src.config import API_KEY
+from src.config import cfg
 from src.utils import send_request, send_request_async
 
 
@@ -14,7 +14,7 @@ def artist_info(artist_name: str, api_key: str) -> dict:
     return send_request(params).get("artist", {})
 
 
-def artist_top_albums(artist_name: str, api_key: str = API_KEY, limit: int = 5) -> list[dict]:
+def artist_top_albums(artist_name: str, api_key: str = cfg.API_KEY, limit: int = 5) -> list[dict]:
     params = {
         "method": "artist.getTopAlbums",
         "artist": artist_name,
@@ -25,7 +25,7 @@ def artist_top_albums(artist_name: str, api_key: str = API_KEY, limit: int = 5) 
     return send_request(params).get("topalbums", {}).get('album', [])
 
 
-async def artist_top_albums_async(artist_name: str, api_key: str = API_KEY, limit: int = 5) -> list[dict]:
+async def artist_top_albums_async(artist_name: str, api_key: str = cfg.API_KEY, limit: int = 5) -> list[dict]:
     params = {
         "method": "artist.getTopAlbums",
         "artist": artist_name,
@@ -39,7 +39,7 @@ async def artist_top_albums_async(artist_name: str, api_key: str = API_KEY, limi
 
 if __name__ == "__main__":
     artist_name = "Brutus"
-    artist_data = artist_info(artist_name, API_KEY)
+    artist_data = artist_info(artist_name, cfg.API_KEY)
 
     if "error" in artist_data:
         print(f"Ошибка: {artist_data['error']}")
@@ -51,5 +51,5 @@ if __name__ == "__main__":
 
     print('=' * 50)
 
-    top_albums = artist_top_albums(artist_name, API_KEY)
+    top_albums = artist_top_albums(artist_name, cfg.API_KEY)
     pprint(top_albums)

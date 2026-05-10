@@ -1,9 +1,9 @@
-from src.config import API_KEY
+from src.config import cfg
 from src.utils import send_request, send_request_async
 from pprint import pprint
 
 
-def album_getinfo(artist_name: str, album_name: str, api_key: str = API_KEY) -> dict:
+def album_getinfo(artist_name: str, album_name: str, api_key: str = cfg.API_KEY) -> dict:
     """
     Get album by album_name and artist_name
     :param artist_name: Имя артиста
@@ -21,7 +21,7 @@ def album_getinfo(artist_name: str, album_name: str, api_key: str = API_KEY) -> 
     return send_request(params)
 
 
-def album_search(album_name: str, api_key: str = API_KEY, limit=5) -> list[dict]:
+def album_search(album_name: str, api_key: str = cfg.API_KEY, limit=5) -> list[dict]:
     """
     Get albums list by album_name
     :param album_name: Имя альбома
@@ -40,7 +40,7 @@ def album_search(album_name: str, api_key: str = API_KEY, limit=5) -> list[dict]
     return send_request(params).get('results', {}).get('albummatches', {}).get('album', [])
 
 
-async def album_search_async(album_name: str, api_key: str = API_KEY, limit=5) -> list[dict]:
+async def album_search_async(album_name: str, api_key: str = cfg.API_KEY, limit=5) -> list[dict]:
     params = {
         "method": "album.search",
         "album": album_name,
@@ -56,10 +56,10 @@ if __name__ == '__main__':
     artist_name = "Brutus"
     album_name = "Unison life"
 
-    album_data = album_getinfo(artist_name, album_name, API_KEY)
+    album_data = album_getinfo(artist_name, album_name, cfg.API_KEY)
     pprint(album_data)
 
     print('-' * 70)
 
-    album_search_data = album_search(album_name, API_KEY, limit=5)
+    album_search_data = album_search(album_name, cfg.API_KEY, limit=5)
     pprint(album_search_data)
