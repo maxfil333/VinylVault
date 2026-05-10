@@ -1,11 +1,35 @@
-import os
-from dotenv import load_dotenv
+from pathlib import Path
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
-load_dotenv()
+BASE_DIR = Path(__file__).parents[1]
 
-API_KEY = os.getenv('API_KEY')
-URL = "http://ws.audioscrobbler.com/2.0/"
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-WEBSITE_DIR = os.path.join(BASE_DIR, "..", "website")
-USERS_DIR = os.path.join(WEBSITE_DIR, "data", "users")
+class Config(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_file=Path(BASE_DIR) / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+    API_KEY: str
+    s3_user: str
+    s3_password: str
+    s3_access_key: str
+    s3_secret_key: str
+    s3_endpoint: str
+    s3_base_domain: str
+    s3_bucket: str = "vinyl"
+
+    BASE_DIR: Path = BASE_DIR
+    WEBSITE_DIR: Path = BASE_DIR / "website"
+    # HTML профилей генерируются на диск и отдаются с сервера (не CDN): сессия /me, частые пересборки.
+    USERS_DIR: Path = WEBSITE_DIR / "data" / "users"
+    URL: str = "http://ws.audioscrobbler.com/2.0/"
+
+
+
+
+cfg = Config()
+
+if __name__ == "__main__":
+    for k, v in cfg.__dict__.items():
+        print(f"{k}={v}")

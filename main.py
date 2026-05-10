@@ -8,11 +8,12 @@ from contextlib import asynccontextmanager
 from typing import Annotated, Optional
 from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, Response, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import EmailStr
 
+from src.config import cfg
 from src.models import VV_Album, VV_User, SearchResults
 from src.handlers import PageNotFoundHandler, register_exception_handlers
 from src.album_info import album_search, album_getinfo, album_search_async
@@ -21,11 +22,9 @@ from src.database import vinyl_vault_users, add_user, is_in_collection
 from src.database import session_cookies, add_session, init_database, close_database
 from src.utils import load_html
 from src.pages import generate_user_page
-from src.config import WEBSITE_DIR
 from src.logger import logger
-
-DEFAULT_AVATAR_URL = "/static/data/avatars/default_avatar.jpg"
-USER_AVATARS_DIR = os.path.join(WEBSITE_DIR, "data", "user_avatars")
+from src.s3_avatars import coalesce_avatar_url, upload_user_avatar_to_s3
+from src.data_cdn import build_vv_theme_css, patch_html_with_cdn_assets
 AVATAR_UPLOAD_MAX_BYTES = 5 * 1024 * 1024
 AVATAR_ALLOWED_TYPES = {
     "image/jpeg": ".jpg",
@@ -155,7 +154,10 @@ async def logout(session_cookies: session_cookies_dep,
 # _____________________________ PAGES _____________________________
 
 @app.get("/me")
-async def my_page(session_data: dict = Depends(get_session_data)):
+async def my_page(
+    users_collection: users_collection_dep,
+    session_data: dict = Depends(get_session_data),
+):
     """ Страница пользователя """
     logger.info("")
 
@@ -163,9 +165,11 @@ async def my_page(session_data: dict = Depends(get_session_data)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
 
     user_id, username = session_data["user_id"], session_data["username"]
-    file_path = os.path.join(WEBSITE_DIR, "data", "users", f"{user_id}.html")
+    file_path = os.path.join(cfg.WEBSITE_DIR, "data", "users", f"{user_id}.html")
+    user_doc = await users_collection.find_one({"user_id": user_id})
+    avatar_url = coalesce_avatar_url((user_doc or {}).get("avatar_url"))
     # Всегда пересобираем шаблон, чтобы подтянуть правки разметки (аватар и т.д.)
-    await generate_user_page(user_id=user_id, username=username)
+    await generate_user_page(user_id=user_id, username=username, avatar_url=avatar_url)
 
     headers = {
         "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",  # запрет на хранение содержимого в кеше
@@ -185,26 +189,32 @@ async def default_page():
 
 @app.get("/welcome", response_class=HTMLResponse)
 async def welcome_page():
-    content = load_html("welcome.html", WEBSITE_DIR)
+    content = patch_html_with_cdn_assets(load_html("welcome.html", cfg.WEBSITE_DIR))
     return HTMLResponse(content=content)
 
 
 @app.get("/testuser", response_class=HTMLResponse)
 async def testuser():
-    content = load_html("user_page_example.html", WEBSITE_DIR)
+    content = patch_html_with_cdn_assets(load_html("user_page_example.html", cfg.WEBSITE_DIR))
     return HTMLResponse(content=content)
 
 
 @app.get("/register", response_class=HTMLResponse)
 async def register_page():
-    content = load_html("register.html", WEBSITE_DIR)
+    content = patch_html_with_cdn_assets(load_html("register.html", cfg.WEBSITE_DIR))
     return HTMLResponse(content=content)
 
 
 @app.get("/login", response_class=HTMLResponse)
 async def login_page():
-    content = load_html("login.html", WEBSITE_DIR)
+    content = patch_html_with_cdn_assets(load_html("login.html", cfg.WEBSITE_DIR))
     return HTMLResponse(content=content)
+
+
+@app.get("/static/vv-data-theme.css")
+async def vv_data_theme_css():
+    """Переменные фона/плейсхолдера с CDN (подключается до styles.css)."""
+    return Response(content=build_vv_theme_css(), media_type="text/css; charset=utf-8")
 
 
 # ____________________________________ API ____________________________________
@@ -431,7 +441,7 @@ async def get_current_user_profile(
     return {
         "user_id": user_id,
         "username": user_doc.get("username", session_data.get("username", "")),
-        "avatar_url": user_doc.get("avatar_url") or DEFAULT_AVATAR_URL,
+        "avatar_url": coalesce_avatar_url(user_doc.get("avatar_url")),
     }
 
 
@@ -457,20 +467,14 @@ async def upload_user_avatar(
     if len(data) > AVATAR_UPLOAD_MAX_BYTES:
         raise HTTPException(status_code=400, detail="Файл больше 5 МБ")
 
-    os.makedirs(USER_AVATARS_DIR, exist_ok=True)
     ext = AVATAR_ALLOWED_TYPES[content_type]
-    for old in glob.glob(os.path.join(USER_AVATARS_DIR, f"{user_id}.*")):
-        try:
-            os.unlink(old)
-        except OSError:
-            pass
-
-    dest_name = f"{user_id}{ext}"
-    dest_path = os.path.join(USER_AVATARS_DIR, dest_name)
-    with open(dest_path, "wb") as f:
-        f.write(data)
-
-    avatar_url = f"/static/data/user_avatars/{dest_name}"
+    avatar_url = await asyncio.to_thread(
+        upload_user_avatar_to_s3,
+        user_id,
+        data,
+        content_type,
+        ext,
+    )
     await users_collection.update_one(
         {"user_id": user_id},
         {"$set": {"avatar_url": avatar_url}},
@@ -483,7 +487,7 @@ async def upload_user_avatar(
 # если кто-то запрашивает http://<your-domain>/static/somefile.png,
 # FastAPI ищет файл по пути WEBSITE_DIR/somefile.png на диске.
 # ! если прописывать путь без "/" в начале (например img src="static/...") - он будет не абсолютным, а относительным
-app.mount("/static", StaticFiles(directory=WEBSITE_DIR))
+app.mount("/static", StaticFiles(directory=cfg.WEBSITE_DIR))
 
 
 async def setup_app():

@@ -20,7 +20,7 @@ class VV_User(BaseModel):
     password: str  # Хэшированный пароль
     email: EmailStr
     albums: list[VV_Album] = Field(default_factory=list)
-    avatar_url: Optional[str] = None  # URL вида /static/data/user_avatars/{user_id}.ext
+    avatar_url: Optional[str] = None  # Публичный URL объекта в S3 (CDN)
 
 
 class VV_Session(BaseModel):

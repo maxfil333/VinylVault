@@ -415,7 +415,7 @@ function createAlbumCard(album) {
     imageContainer.className = 'image-container';
 
     const img = document.createElement('img');
-    img.src = album.cover_url || '/static/data/other/unfound.jpg';
+    img.src = album.cover_url || (window.__VV_UNFOUND_IMG__ || '/static/data/other/unfound.jpg');
     img.className = 'album_list_square card-img-top';
     img.alt = album.album_name;
 
@@ -504,7 +504,7 @@ function addAlbumBySearchGrouped(result) {
             textSpan.style.paddingRight = '8px';
 
             const img = document.createElement('img');
-            const cover = album.cover_url || album.cover_url_reserve || '/static/data/other/unfound.jpg';
+            const cover = album.cover_url || album.cover_url_reserve || (window.__VV_UNFOUND_IMG__ || '/static/data/other/unfound.jpg');
             img.src = cover;
             img.alt = album.album_name;
             img.style.width = '32px';

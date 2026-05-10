@@ -1,8 +1,14 @@
 import aiofiles
 
-from src.config import WEBSITE_DIR
+from src.config import cfg
+from src.data_cdn import data_asset_public_url, html_inject_cdn_head
+from src.s3_avatars import coalesce_avatar_url
 
-async  def generate_user_page(user_id: str, username: str):
+
+async def generate_user_page(user_id: str, username: str, avatar_url: str | None = None):
+    avatar_url = coalesce_avatar_url(avatar_url)
+    logo_url = data_asset_public_url("other/VVlogo_solo_cr.png")
+
     html_content = f"""
     
     <!DOCTYPE html>
@@ -13,6 +19,7 @@ async  def generate_user_page(user_id: str, username: str):
         <meta name="page-type" content="user">
         <title>VinylVault</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+        {html_inject_cdn_head()}
         <link href="/static/styles.css" rel="stylesheet">
         <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400&display=swap" rel="stylesheet">
     </head>
@@ -24,7 +31,7 @@ async  def generate_user_page(user_id: str, username: str):
     <nav class="navbar navbar-expand-sm navbar-dark bg-dark fixed-top">
         <div class="container-fluid">
             <a class="navbar-brand" href="/welcome" style="padding-top: 0">
-                <img src="/static/data/other/VVlogo_solo_cr.png" alt="VivylVault Logo" style="width:200px; height:30px;" class="rounded-3">
+                <img src="{logo_url}" alt="VivylVault Logo" style="width:200px; height:30px;" class="rounded-3">
             </a>
             <div class="collapse navbar-collapse justify-content-end" id="mynavbar">
                 <form class="d-flex">
@@ -38,7 +45,7 @@ async  def generate_user_page(user_id: str, username: str):
     <!-- Блок профиля пользователя -->
     <div class="container-fluid position-relative d-flex justify-content-center" style="background-color: black; height: 100px;">
         <div class="position-absolute d-flex flex-column align-items-center" style="bottom: 0; transform: translateY(50%); z-index: 2;">
-            <img id="user-avatar" src="/static/data/avatars/avatar1.jpg" alt="Аватар"
+            <img id="user-avatar" src="{avatar_url}" alt="Аватар"
                  class="rounded-circle"
                  style="width: 150px; height: 150px; object-fit: cover; cursor: default;">
             <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp,image/gif" class="d-none">
@@ -89,6 +96,6 @@ async  def generate_user_page(user_id: str, username: str):
 
     
     """
-    page_path = f"{WEBSITE_DIR}/data/users/{user_id}.html"
+    page_path = f"{cfg.WEBSITE_DIR}/data/users/{user_id}.html"
     async with aiofiles.open(page_path, "w", encoding="utf-8") as f:
         await  f.write(html_content)

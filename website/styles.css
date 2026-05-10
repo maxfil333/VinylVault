@@ -5,7 +5,7 @@ body::before {
     left: 0;
     width: 100%;
     height: 100%;
-    background-image: url('data/backgrounds/back1.jpg'); /* Путь к вашему изображению */
+    background-image: var(--vv-page-bg, url('data/backgrounds/back1.jpg'));
     background-size: cover; /* Масштабирование изображения */
     background-repeat: no-repeat; /* Избегать повторов изображения */
     background-position: center; /* Центрирование изображения */
@@ -44,7 +44,7 @@ body.login-page::before {
     position: relative;
     width: 100%;
     padding-top: 100%; /* Делает контейнер квадратным */
-    background-image: url('data/other/loading.jpg'); /* Фоновое изображение */
+    background-image: var(--vv-loading-placeholder, url('data/other/loading.jpg'));
     background-size: cover;
     background-position: center;
     overflow: hidden;

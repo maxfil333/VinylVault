@@ -2,6 +2,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import RedirectResponse, JSONResponse
 
 from src.pages import generate_user_page
+from src.s3_avatars import coalesce_avatar_url
 
 
 class PageNotFoundHandler(BaseHTTPMiddleware):
@@ -34,7 +35,11 @@ class PageNotFoundHandler(BaseHTTPMiddleware):
             return response  # Пользователь реально отсутствует → обычный 404
 
         # --- Генерация HTML ---
-        await generate_user_page(user_id=_id, username=user.get("username"))
+        await generate_user_page(
+            user_id=_id,
+            username=user.get("username"),
+            avatar_url=coalesce_avatar_url(user.get("avatar_url")),
+        )
 
         # --- Редирект на готовую страницу ---
         return RedirectResponse(
