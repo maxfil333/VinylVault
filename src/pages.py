@@ -37,10 +37,15 @@ async  def generate_user_page(user_id: str, username: str):
     
     <!-- Блок профиля пользователя -->
     <div class="container-fluid position-relative d-flex justify-content-center" style="background-color: black; height: 100px;">
-        <img src="/static/data/avatars/avatar1.jpg" alt="User Avatar"
-             class="rounded-circle position-absolute"
-             style="width: 150px; height: 150px; bottom: 0; transform: translateY(50%);">
-        <span class="font-family: Barlow text-white position-absolute" style="bottom: 5px; margin-left: 250px; z-index: 1;">{username}</span>
+        <div class="position-absolute d-flex flex-column align-items-center" style="bottom: 0; transform: translateY(50%); z-index: 2;">
+            <img id="user-avatar" src="/static/data/avatars/avatar1.jpg" alt="Аватар"
+                 class="rounded-circle"
+                 style="width: 150px; height: 150px; object-fit: cover; cursor: pointer;"
+                 title="Нажмите, чтобы сменить фото">
+            <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp,image/gif" class="d-none">
+            <button type="button" id="avatar-change-btn" class="btn btn-sm btn-outline-light mt-2">Сменить фото</button>
+        </div>
+        <span id="profile-username" class="font-family: Barlow text-white position-absolute" style="bottom: 5px; margin-left: 250px; z-index: 1;">{username}</span>
     </div>
     
     <!-- Блок с альбомами -->

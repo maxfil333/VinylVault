@@ -1,11 +1,12 @@
 import os
+import glob
 import time
 import uuid
 import uvicorn
 import asyncio
 from contextlib import asynccontextmanager
-from typing import Annotated, Optional, Literal
-from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, Response
+from typing import Annotated, Optional
+from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, Response, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -22,6 +23,16 @@ from src.utils import load_html
 from src.pages import generate_user_page
 from src.config import WEBSITE_DIR
 from src.logger import logger
+
+DEFAULT_AVATAR_URL = "/static/data/avatars/default_avatar.jpg"
+USER_AVATARS_DIR = os.path.join(WEBSITE_DIR, "data", "user_avatars")
+AVATAR_UPLOAD_MAX_BYTES = 5 * 1024 * 1024
+AVATAR_ALLOWED_TYPES = {
+    "image/jpeg": ".jpg",
+    "image/png": ".png",
+    "image/webp": ".webp",
+    "image/gif": ".gif",
+}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -153,9 +164,8 @@ async def my_page(session_data: dict = Depends(get_session_data)):
 
     user_id, username = session_data["user_id"], session_data["username"]
     file_path = os.path.join(WEBSITE_DIR, "data", "users", f"{user_id}.html")
-    if not os.path.exists(file_path):
-        # Генерируем страницу для нового пользователя (имя файла совпадает с VV_User.user_id)
-        await generate_user_page(user_id=user_id, username=username)
+    # Всегда пересобираем шаблон, чтобы подтянуть правки разметки (аватар и т.д.)
+    await generate_user_page(user_id=user_id, username=username)
 
     headers = {
         "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",  # запрет на хранение содержимого в кеше
@@ -402,6 +412,70 @@ async def get_current_user_id(session_data: dict = Depends(get_session_data)):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
 
     return {"user_id": session_data["user_id"]}
+
+
+@app.get("/api/me/profile")
+async def get_current_user_profile(
+    users_collection: users_collection_dep,
+    session_data: dict = Depends(get_session_data),
+):
+    """ Профиль текущего пользователя: имя и URL аватара (для отображения на странице /me). """
+    user_id = session_data.get("user_id")
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
+
+    user_doc = await users_collection.find_one({"user_id": user_id})
+    if not user_doc:
+        raise HTTPException(status_code=404, detail="Пользователь не найден")
+
+    return {
+        "user_id": user_id,
+        "username": user_doc.get("username", session_data.get("username", "")),
+        "avatar_url": user_doc.get("avatar_url") or DEFAULT_AVATAR_URL,
+    }
+
+
+@app.post("/api/users/{user_id}/avatar")
+async def upload_user_avatar(
+    user_id: str,
+    users_collection: users_collection_dep,
+    session_data: dict = Depends(get_session_data),
+    file: UploadFile = File(...),
+):
+    """ Загрузка нового аватара (только для своей учётной записи). """
+    if session_data.get("user_id") != user_id:
+        raise HTTPException(status_code=403, detail="Access denied")
+
+    content_type = (file.content_type or "").split(";")[0].strip().lower()
+    if content_type not in AVATAR_ALLOWED_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Допустимы только изображения JPEG, PNG, WebP или GIF",
+        )
+
+    data = await file.read()
+    if len(data) > AVATAR_UPLOAD_MAX_BYTES:
+        raise HTTPException(status_code=400, detail="Файл больше 5 МБ")
+
+    os.makedirs(USER_AVATARS_DIR, exist_ok=True)
+    ext = AVATAR_ALLOWED_TYPES[content_type]
+    for old in glob.glob(os.path.join(USER_AVATARS_DIR, f"{user_id}.*")):
+        try:
+            os.unlink(old)
+        except OSError:
+            pass
+
+    dest_name = f"{user_id}{ext}"
+    dest_path = os.path.join(USER_AVATARS_DIR, dest_name)
+    with open(dest_path, "wb") as f:
+        f.write(data)
+
+    avatar_url = f"/static/data/user_avatars/{dest_name}"
+    await users_collection.update_one(
+        {"user_id": user_id},
+        {"$set": {"avatar_url": avatar_url}},
+    )
+    return {"avatar_url": avatar_url}
 
 
 # ____________________________________ FastAPI config ____________________________________

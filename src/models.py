@@ -1,4 +1,6 @@
 from datetime import datetime
+from typing import Optional
+
 from pydantic import BaseModel, Field, EmailStr
 from bson import ObjectId  # id для Mongo
 
@@ -18,6 +20,7 @@ class VV_User(BaseModel):
     password: str  # Хэшированный пароль
     email: EmailStr
     albums: list[VV_Album] = Field(default_factory=list)
+    avatar_url: Optional[str] = None  # URL вида /static/data/user_avatars/{user_id}.ext
 
 
 class VV_Session(BaseModel):

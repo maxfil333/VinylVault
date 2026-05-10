@@ -1,6 +1,7 @@
 //----------------------------------------------------------------------------------------------------------- ПЕРЕМЕННЫЕ
 
-const serverAddress = 'http://127.0.0.1:8000/'; // URL FastAPI сервера
+// Базовый URL API: тот же origin, что и страница (корректно и для localhost, и для деплоя)
+const serverAddress = `${window.location.origin}/`;
 
 const albumList = document.getElementById('album-list');
 const albumSearchInput = document.getElementById('album-search');
@@ -108,6 +109,59 @@ async function getUserIdFromSession() {
     const data = await response.json();
     console.log(data.user_id)
     return data.user_id;
+}
+
+async function loadUserProfile() {
+    const response = await fetch(serverAddress + 'api/me/profile', { credentials: 'include' });
+    if (!response.ok) return null;
+    return await response.json();
+}
+
+async function uploadAvatar(file) {
+    const user_id = await getUserIdFromSession();
+    if (!user_id) {
+        console.error('user_id не найден в cookie!');
+        return;
+    }
+    const formData = new FormData();
+    formData.append('file', file);
+    const url = `${serverAddress}api/users/${user_id}/avatar`;
+    const response = await fetch(url, {
+        method: 'POST',
+        body: formData,
+        credentials: 'include',
+    });
+    if (!response.ok) {
+        const err = await response.json().catch(() => ({}));
+        throw new Error(err.detail || `Ошибка загрузки: ${response.status}`);
+    }
+    return await response.json();
+}
+
+function setupAvatarControls() {
+    const img = document.getElementById('user-avatar');
+    const input = document.getElementById('avatar-input');
+    const btn = document.getElementById('avatar-change-btn');
+    if (!img || !input) return;
+
+    const pickFile = () => input.click();
+    if (btn) btn.addEventListener('click', pickFile);
+    img.addEventListener('click', pickFile);
+
+    input.addEventListener('change', async () => {
+        const file = input.files && input.files[0];
+        input.value = '';
+        if (!file) return;
+        try {
+            const data = await uploadAvatar(file);
+            if (data && data.avatar_url) {
+                img.src = `${data.avatar_url}?t=${Date.now()}`;
+            }
+        } catch (e) {
+            console.error(e);
+            alert(e.message || 'Не удалось загрузить аватар');
+        }
+    });
 }
 
 // Функция отправки альбома на сервер ( @app.post("/api/users/{user_id}/albums/add/") )
@@ -248,6 +302,22 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
         loadUserAlbums(userId);
         setupLogoutButton();
+        setupAvatarControls();
+        try {
+            const profile = await loadUserProfile();
+            if (profile && profile.avatar_url) {
+                const avatarEl = document.getElementById('user-avatar');
+                if (avatarEl) {
+                    avatarEl.src = `${profile.avatar_url}?t=${Date.now()}`;
+                }
+                const nameEl = document.getElementById('profile-username');
+                if (nameEl && profile.username) {
+                    nameEl.textContent = profile.username;
+                }
+            }
+        } catch (e) {
+            console.error('Профиль не загружен:', e);
+        }
     }
 });
 
