@@ -96,6 +96,8 @@ async def generate_user_page(user_id: str, username: str, avatar_url: str | None
 
     
     """
-    page_path = f"{cfg.WEBSITE_DIR}/data/users/{user_id}.html"
+    cfg.USERS_DIR.mkdir(parents=True, exist_ok=True)
+    page_path = cfg.USERS_DIR / f"{user_id}.html"
+
     async with aiofiles.open(page_path, "w", encoding="utf-8") as f:
-        await  f.write(html_content)
+        await f.write(html_content)
