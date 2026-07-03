@@ -1,0 +1,32 @@
+services:
+
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    command: ["mongod", "--quiet"]
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+
+  mongo-express:
+    image: mongo-express
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_started
+    ports:
+      - "8081:8081"
+    environment:
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
+      ME_CONFIG_SITE_BASEURL: /mongo
+      ME_CONFIG_BASICAUTH_ENABLED: "false"
+      ME_CONFIG_SITE_COOKIESECRET: dev-cookie-secret
+      ME_CONFIG_SITE_SESSIONSECRET: dev-session-secret
+
+volumes:
+  mongo_data:
+
+# docker compose -p eco-cuda-compose up --build
+# http://localhost:8081/mongo
+# admin / pass
