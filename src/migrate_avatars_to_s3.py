@@ -10,7 +10,7 @@ import re
 from pathlib import Path
 
 from src.config import cfg
-from src.database import close_database, init_database, vinyl_vault_users
+from src.database import close_database, init_database, get_users_collection
 from src.s3_avatars import (
     AVATAR_EXT_TO_CONTENT_TYPE,
     DEFAULT_AVATAR_KEY,
@@ -121,7 +121,7 @@ async def _rewrite_cdn_avatar_urls_in_db(coll) -> None:
 async def main() -> None:
     await init_database()
     try:
-        coll = await vinyl_vault_users()
+        coll = await get_users_collection()
         await _migrate_default()
         await _migrate_local_files(coll)
         await _migrate_legacy_db_urls(coll)

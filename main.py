@@ -18,8 +18,8 @@ from src.models import VV_Album, VV_User, SearchResults
 from src.handlers import PageNotFoundHandler, register_exception_handlers
 from src.album_info import album_search, album_getinfo, album_search_async
 from src.artist_info import artist_top_albums_async
-from src.database import vinyl_vault_users, add_user, is_in_collection
-from src.database import session_cookies, add_session, init_database, close_database
+from src.database import get_users_collection, add_user, is_in_collection
+from src.database import get_session_cookies_collection, add_session, init_database, close_database
 from src.utils import load_html
 from src.pages import generate_user_page
 from src.logger import logger
@@ -36,7 +36,7 @@ AVATAR_ALLOWED_TYPES = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_database()
-    app.state.users_collection = await vinyl_vault_users()
+    app.state.users_collection = await get_users_collection()
     yield
     await close_database()
 
@@ -54,8 +54,8 @@ app.add_middleware(
     allow_headers=["*"],  # Разрешить все заголовки
 )
 
-users_collection_dep = Annotated[AsyncIOMotorCollection, Depends(vinyl_vault_users)]
-session_cookies_dep = Annotated[AsyncIOMotorCollection, Depends(session_cookies)]
+users_collection_dep = Annotated[AsyncIOMotorCollection, Depends(get_users_collection)]
+session_cookies_dep = Annotated[AsyncIOMotorCollection, Depends(get_session_cookies_collection)]
 
 SESSION_COOKIES_KEY = 'vv_session_cookie'
 
@@ -484,41 +484,17 @@ async def upload_user_avatar(
 app.mount("/static", StaticFiles(directory=cfg.WEBSITE_DIR))
 
 
-async def setup_app():
-    # Инициализируем подключение к MongoDB
-    await init_database()
-
-    # Подключаем Middleware
-    users_collection = await vinyl_vault_users()  # Дожидаемся коллекции
-    app.state.users_collection = users_collection
-    return app
-
-
 if __name__ == "__main__":
+    # ___ >>> DEBUG ___
     import atexit
-
-
-    async def cleanup():
-        await close_database()
-
-
-    # Регистрируем функцию очистки для выполнения при завершении
-    atexit.register(lambda: asyncio.run(cleanup()))
-
-    # ___ DEBUG ___
-    import glob
-
 
     def cleanup_users():
         for f in glob.glob('../website/data/users/*.html'):
             os.unlink(f)
 
+    atexit.register(cleanup_users)
+    # ___ <<< DEBUG ___
 
-    atexit.register(lambda: cleanup_users())
-    # ___ DEBUG ___
-
-    loop = asyncio.new_event_loop()
-    loop.run_until_complete(setup_app())
     uvicorn.run(app)
 
 # todo: редирект с главной на welcome если нет куки, на my если есть куки

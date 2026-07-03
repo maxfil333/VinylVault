@@ -1,3 +1,4 @@
+import asyncio
 from typing import Optional
 from datetime import datetime
 from pymongo.results import InsertOneResult
@@ -29,6 +30,16 @@ async def init_database():
     """Инициализация подключения к MongoDB"""
     global MONGO_CLIENT, VINYL_VAULT_DB
     MONGO_CLIENT = await mongo_connect()
+
+    try:
+        await asyncio.wait_for(
+            MONGO_CLIENT.admin.command("ping"),
+            timeout=2.0,
+        )
+    except TimeoutError:
+        logger.error(f"MongoDB недоступен")
+        raise
+
     VINYL_VAULT_DB = await get_db(MONGO_CLIENT, 'VinylVault')
     logger.info("MongoDB подключение инициализировано")
 
@@ -39,12 +50,6 @@ async def close_database():
     if MONGO_CLIENT:
         MONGO_CLIENT.close()
         logger.info("MongoDB подключение закрыто")
-
-
-async def get_collection(db: AsyncIOMotorDatabase, collection_name: str) -> AsyncIOMotorCollection:
-    logger.info("")
-    collection = db[collection_name]
-    return collection
 
 
 async def add_user(collection: AsyncIOMotorCollection, user: VV_User) -> InsertOneResult:
@@ -69,43 +74,53 @@ async def is_in_collection(field: str, value: str, collection: AsyncIOMotorColle
     return bool(await collection.find_one({field: value}))
 
 
-async def vinyl_vault_users() -> AsyncIOMotorCollection:
+async def _get_collection(db: AsyncIOMotorDatabase, collection_name: str) -> AsyncIOMotorCollection:
+    logger.info("")
+    collection = db[collection_name]
+    return collection
+
+
+async def get_users_collection() -> AsyncIOMotorCollection:
     logger.info("")
     if VINYL_VAULT_DB is None:
         raise RuntimeError("База данных не инициализирована. Вызовите init_database() сначала.")
-    return await get_collection(VINYL_VAULT_DB, 'users_collection')
+    return await _get_collection(VINYL_VAULT_DB, 'users_collection')
 
 
-async def session_cookies() -> AsyncIOMotorCollection:
+async def get_session_cookies_collection() -> AsyncIOMotorCollection:
     logger.info("")
     if VINYL_VAULT_DB is None:
         raise RuntimeError("База данных не инициализирована. Вызовите init_database() сначала.")
-    return await get_collection(VINYL_VAULT_DB, 'session_cookies_collection')
-
-
-async def main():
-    await init_database()
-    users_collection = await get_collection(VINYL_VAULT_DB, 'users_collection')
-    session_cookies_collection = await get_collection(VINYL_VAULT_DB, 'session_cookies_collection')
-
-    await users_collection.drop()
-    await session_cookies_collection.drop()
-
-    u1 = await add_user(users_collection, VV_User(username='maxfil333', password='333', email="123asdasdx@mail.ru", user_id="testid"))
-    u2 = await add_user(users_collection, VV_User(username='alice', password='123', email="123asdasdx@mail.ru"))
-    print(u1.inserted_id)
-    print(u2.inserted_id)
-
-    # update
-    await users_collection.update_one({"username": "alice"}, {"$set": {"password": "666"}})
-
-    # get user by username and password
-    collection = await vinyl_vault_users()
-    result = await collection.find_one({'username': 'maxfil333', 'password': '333'})
-    print(result)
+    return await _get_collection(VINYL_VAULT_DB, 'session_cookies_collection')
 
 
 if __name__ == "__main__":
-    import asyncio
 
-    asyncio.run(main())
+    async def test():
+        await init_database()
+        users_collection = await _get_collection(VINYL_VAULT_DB, 'users_collection')
+        session_cookies_collection = await _get_collection(VINYL_VAULT_DB, 'session_cookies_collection')
+
+        await users_collection.drop()
+        await session_cookies_collection.drop()
+
+        u1 = await add_user(
+            users_collection,
+            VV_User(username='maxfil333', password='333', email="123asdasdx@mail.ru", user_id="testid")
+        )
+        u2 = await add_user(
+            users_collection,
+            VV_User(username='alice', password='123', email="123asdasdx@mail.ru")
+        )
+        print(u1.inserted_id)
+        print(u2.inserted_id)
+
+        # update
+        await users_collection.update_one({"username": "alice"}, {"$set": {"password": "666"}})
+
+        # get user by username and password
+        collection = await get_users_collection()
+        result = await collection.find_one({'username': 'maxfil333', 'password': '333'})
+        print(result)
+
+    asyncio.run(test())
