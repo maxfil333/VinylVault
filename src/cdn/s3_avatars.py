@@ -8,7 +8,7 @@ from typing import Any
 from botocore.exceptions import ClientError
 
 from src.config import cfg
-from src.s3_async import s3_client
+from cdn.s3_async import s3_client
 
 # Ключи в бакете (корень CDN = s3_base_domain)
 DEFAULT_AVATAR_KEY = "other/default_avatar.jpg"

@@ -6,7 +6,7 @@ import uvicorn
 import asyncio
 from contextlib import asynccontextmanager
 from typing import Annotated, Optional
-from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, Response, UploadFile, File
+from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
@@ -23,8 +23,8 @@ from src.database import get_session_cookies_collection, add_session, init_datab
 from src.utils import load_html
 from src.pages import generate_user_page
 from src.logger import logger
-from src.s3_avatars import coalesce_avatar_url, upload_user_avatar_to_s3
-from src.data_cdn import build_vv_theme_css, patch_html_with_cdn_assets
+from cdn.s3_avatars import coalesce_avatar_url, upload_user_avatar_to_s3
+from cdn.data_cdn import build_vv_theme_css, patch_html_with_cdn_assets
 AVATAR_UPLOAD_MAX_BYTES = 5 * 1024 * 1024
 AVATAR_ALLOWED_TYPES = {
     "image/jpeg": ".jpg",

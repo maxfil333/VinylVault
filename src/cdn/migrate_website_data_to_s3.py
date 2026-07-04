@@ -12,7 +12,7 @@ import asyncio
 from pathlib import Path
 
 from src.config import cfg
-from src.data_cdn import upload_data_file
+from cdn.data_cdn import upload_data_file
 
 DATA_ROOT: Path = cfg.WEBSITE_DIR / "data"
 ONLY_TOP = frozenset({"avatars", "backgrounds", "other"})

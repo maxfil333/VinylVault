@@ -6,7 +6,7 @@ import mimetypes
 from pathlib import Path
 
 from src.config import cfg
-from src.s3_async import s3_client
+from cdn.s3_async import s3_client
 
 
 def data_asset_public_url(relative_under_data: str) -> str:

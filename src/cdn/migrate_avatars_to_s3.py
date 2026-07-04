@@ -11,7 +11,7 @@ from pathlib import Path
 
 from src.config import cfg
 from src.database import close_database, init_database, get_users_collection
-from src.s3_avatars import (
+from cdn.s3_avatars import (
     AVATAR_EXT_TO_CONTENT_TYPE,
     DEFAULT_AVATAR_KEY,
     LEGACY_STATIC_DEFAULT_AVATARS,
