@@ -81,7 +81,7 @@ def download_images(albums, output_dir) -> None:
 
 if __name__ == "__main__":
     artist_name = "Brutus"
-    output_dir = "../album_covers"
+    output_dir = "../../album_covers"
 
     albums = get_artist_albums(artist_name, cfg.API_KEY)
     if "error" in albums:

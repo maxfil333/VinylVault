@@ -1,7 +1,7 @@
 from pprint import pprint
 
 from src.config import cfg
-from src.utils import send_request, send_request_async
+from utils.utils import send_request, send_request_async
 
 
 def artist_info(artist_name: str, api_key: str) -> dict:

@@ -5,7 +5,7 @@ from pymongo.results import InsertOneResult
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
 
 from src.models import VV_User, VV_Session
-from src.logger import logger
+from utils.logger import logger
 
 
 async def mongo_connect(host: str = "mongodb://localhost:27017/") -> AsyncIOMotorClient:

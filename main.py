@@ -16,13 +16,13 @@ from pydantic import EmailStr
 from src.config import cfg
 from src.models import VV_Album, VV_User, SearchResults
 from src.handlers import PageNotFoundHandler, register_exception_handlers
-from src.album_info import album_search, album_getinfo, album_search_async
-from src.artist_info import artist_top_albums_async
+from lastfm_api.album_info import album_search, album_getinfo, album_search_async
+from lastfm_api.artist_info import artist_top_albums_async
 from src.database import get_users_collection, add_user, is_in_collection
 from src.database import get_session_cookies_collection, add_session, init_database, close_database
-from src.utils import load_html
+from utils.utils import load_html
+from utils.logger import logger
 from src.pages import generate_user_page
-from src.logger import logger
 from cdn.s3_avatars import coalesce_avatar_url, upload_user_avatar_to_s3
 from cdn.data_cdn import build_vv_theme_css, patch_html_with_cdn_assets
 AVATAR_UPLOAD_MAX_BYTES = 5 * 1024 * 1024
