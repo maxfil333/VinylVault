@@ -5,13 +5,19 @@ from pymongo.results import InsertOneResult
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
 
 from src.models import VV_User, VV_Session
-from utils.logger import logger
+from src.utils.logger import logger
+from src.config import cfg
+
+MONGO_PING_TIMEOUT_SEC = 5.0
+MONGO_CONNECT_RETRIES = 5
+MONGO_CONNECT_RETRY_DELAY_SEC = 2.0
 
 
-async def mongo_connect(host: str = "mongodb://localhost:27017/") -> AsyncIOMotorClient:
+async def mongo_connect(host: str | None = None) -> AsyncIOMotorClient:
     """ Подключение к локальной базе данных MongoDB """
-    logger.info("")
-    client = AsyncIOMotorClient(host)
+    uri = host or cfg.MONGO_URI
+    logger.info(f"Подключение к MongoDB: {uri}")
+    client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=int(MONGO_PING_TIMEOUT_SEC * 1000))
     return client
 
 
@@ -29,19 +35,30 @@ VINYL_VAULT_DB: Optional[AsyncIOMotorDatabase]  = None
 async def init_database():
     """Инициализация подключения к MongoDB"""
     global MONGO_CLIENT, VINYL_VAULT_DB
-    MONGO_CLIENT = await mongo_connect()
 
-    try:
-        await asyncio.wait_for(
-            MONGO_CLIENT.admin.command("ping"),
-            timeout=2.0,
-        )
-    except TimeoutError:
-        logger.error(f"MongoDB недоступен")
-        raise
+    last_error: Exception | None = None
+    for attempt in range(1, MONGO_CONNECT_RETRIES + 1):
+        if MONGO_CLIENT:
+            MONGO_CLIENT.close()
+        MONGO_CLIENT = await mongo_connect()
+        try:
+            await asyncio.wait_for(
+                MONGO_CLIENT.admin.command("ping"),
+                timeout=MONGO_PING_TIMEOUT_SEC,
+            )
+            VINYL_VAULT_DB = await get_db(MONGO_CLIENT, 'VinylVault')
+            logger.info("MongoDB подключение инициализировано")
+            return
+        except (TimeoutError, Exception) as exc:
+            last_error = exc
+            logger.warning(
+                f"MongoDB недоступен (попытка {attempt}/{MONGO_CONNECT_RETRIES}): {exc}"
+            )
+            if attempt < MONGO_CONNECT_RETRIES:
+                await asyncio.sleep(MONGO_CONNECT_RETRY_DELAY_SEC)
 
-    VINYL_VAULT_DB = await get_db(MONGO_CLIENT, 'VinylVault')
-    logger.info("MongoDB подключение инициализировано")
+    logger.error("MongoDB недоступен после всех попыток подключения")
+    raise last_error or TimeoutError("MongoDB недоступен")
 
 
 async def close_database():

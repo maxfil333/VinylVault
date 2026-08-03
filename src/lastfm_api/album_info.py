@@ -1,5 +1,5 @@
 from src.config import cfg
-from utils.utils import send_request, send_request_async
+from src.utils.utils import send_request, send_request_async
 from pprint import pprint
 
 

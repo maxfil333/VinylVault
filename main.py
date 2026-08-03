@@ -16,15 +16,15 @@ from pydantic import EmailStr
 from src.config import cfg
 from src.models import VV_Album, VV_User, SearchResults
 from src.handlers import PageNotFoundHandler, register_exception_handlers
-from lastfm_api.album_info import album_search, album_getinfo, album_search_async
-from lastfm_api.artist_info import artist_top_albums_async
+from src.lastfm_api.album_info import album_search, album_getinfo, album_search_async
+from src.lastfm_api.artist_info import artist_top_albums_async
 from src.database import get_users_collection, add_user, is_in_collection
 from src.database import get_session_cookies_collection, add_session, init_database, close_database
-from utils.utils import load_html
-from utils.logger import logger
+from src.utils.utils import load_html
+from src.utils.logger import logger
 from src.pages import generate_user_page
-from cdn.s3_avatars import coalesce_avatar_url, upload_user_avatar_to_s3
-from cdn.data_cdn import build_vv_theme_css, patch_html_with_cdn_assets
+from src.cdn.s3_avatars import coalesce_avatar_url, upload_user_avatar_to_s3
+from src.cdn.data_cdn import build_vv_theme_css, patch_html_with_cdn_assets
 AVATAR_UPLOAD_MAX_BYTES = 5 * 1024 * 1024
 AVATAR_ALLOWED_TYPES = {
     "image/jpeg": ".jpg",
@@ -495,7 +495,7 @@ if __name__ == "__main__":
     atexit.register(cleanup_users)
     # ___ <<< DEBUG ___
 
-    uvicorn.run(app)
+    uvicorn.run(app, host="0.0.0.0", port=8000)
 
 # todo: редирект с главной на welcome если нет куки, на my если есть куки
 

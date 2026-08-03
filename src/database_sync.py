@@ -5,9 +5,12 @@ from pymongo.database import Database
 import inspect
 
 from src.models import VV_User
+from src.config import cfg
+
+host_ = cfg.MONGO_URI
 
 
-def mongo_connect(host: str = "mongodb://localhost:27017/") -> MongoClient:
+def mongo_connect(host: str = host_) -> MongoClient:
     """ Подключение к локальной базе данных MongoDB """
     print("Function name:", inspect.currentframe().f_code.co_name)
     client = MongoClient(host)

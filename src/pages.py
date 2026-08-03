@@ -1,8 +1,8 @@
 import aiofiles
 
 from src.config import cfg
-from cdn.data_cdn import data_asset_public_url, html_inject_cdn_head
-from cdn.s3_avatars import coalesce_avatar_url
+from src.cdn.data_cdn import data_asset_public_url, html_inject_cdn_head
+from src.cdn.s3_avatars import coalesce_avatar_url
 
 
 async def generate_user_page(user_id: str, username: str, avatar_url: str | None = None):

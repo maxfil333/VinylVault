@@ -7,8 +7,8 @@ from __future__ import annotations
 
 import asyncio
 
-from cdn.migrate_avatars_to_s3 import main as migrate_avatars_main
-from cdn.migrate_website_data_to_s3 import main as migrate_data_main
+from src.cdn.migrate_avatars_to_s3 import main as migrate_avatars_main
+from src.cdn.migrate_website_data_to_s3 import main as migrate_data_main
 
 
 async def main() -> None:

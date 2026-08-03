@@ -2,7 +2,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import RedirectResponse, JSONResponse
 
 from src.pages import generate_user_page
-from cdn.s3_avatars import coalesce_avatar_url
+from src.cdn.s3_avatars import coalesce_avatar_url
 
 
 class PageNotFoundHandler(BaseHTTPMiddleware):

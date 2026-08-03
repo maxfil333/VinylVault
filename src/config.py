@@ -24,7 +24,7 @@ class Config(BaseSettings):
     # HTML профилей генерируются на диск и отдаются с сервера (не CDN): сессия /me, частые пересборки.
     USERS_DIR: Path = WEBSITE_DIR / "data" / "users"
     URL: str = "http://ws.audioscrobbler.com/2.0/"
-
+    MONGO_URI: str = "mongodb://localhost:27017"
 
 
 

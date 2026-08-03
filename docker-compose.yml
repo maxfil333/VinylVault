@@ -1,5 +1,21 @@
 services:
 
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vinyl_fast_api
+    depends_on:
+      mongo:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      MONGO_URI: "mongodb://mongo:27017/?directConnection=true"
+      TZ: Europe/Moscow
+    ports:
+      - "8000:8000"
+
   mongo:
     image: mongo:8
     restart: unless-stopped
@@ -8,17 +24,23 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   mongo-express:
     image: mongo-express
     restart: unless-stopped
     depends_on:
       mongo:
-        condition: service_started
+        condition: service_healthy
     ports:
       - "8081:8081"
     environment:
-      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/
+      ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/?directConnection=true
       ME_CONFIG_SITE_BASEURL: /mongo
       ME_CONFIG_BASICAUTH_ENABLED: "false"
       ME_CONFIG_SITE_COOKIESECRET: dev-cookie-secret
@@ -27,6 +49,5 @@ services:
 volumes:
   mongo_data:
 
-# docker compose -p eco-cuda-compose up --build
+# docker compose up --build
 # http://localhost:8081/mongo
-# admin / pass
