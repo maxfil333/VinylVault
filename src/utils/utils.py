@@ -32,7 +32,7 @@ async def send_request_async(params: dict) -> dict:
 
 
 def load_html(filename: str, filedir: str) -> str:
-    """Считывает содержимое HTML-файла из директории website."""
+    """Считывает содержимое HTML-файла из директории website (WEBSITE_DIR)."""
     file_path = os.path.join(filedir, filename)
     with open(file_path, "r", encoding="utf-8") as f:
         return f.read()

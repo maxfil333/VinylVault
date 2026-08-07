@@ -1,1 +1,1 @@
-![](https://github.com/maxfil333/VinylVault/blob/master/website/data/other/VVlogo_solo_cr.png)
+![](https://github.com/maxfil333/VinylVault/blob/master/web/website/data/other/VVlogo_solo_cr.png)

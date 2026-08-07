@@ -1,9 +1,9 @@
-"""Загрузка website/data/{avatars,backgrounds,other} в S3 (те же ключи: avatars/..., backgrounds/..., other/...).
+"""Загрузка web/website/data/{avatars,backgrounds,other} в S3 (те же ключи: avatars/..., backgrounds/..., other/...).
 
 Не заливается: users/, user_avatars/ (HTML и пользовательские аватары — отдельно).
 Не заливается файл avatars/default_avatar.jpg с диска — канонический дефолт в other/default_avatar.jpg.
 
-Запуск: python -m src.migrate_website_data_to_s3
+Запуск: python -m src.cdn.migrate_website_data_to_s3
 """
 
 from __future__ import annotations

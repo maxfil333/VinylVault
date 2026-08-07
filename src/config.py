@@ -20,9 +20,10 @@ class Config(BaseSettings):
     s3_bucket: str = "vinyl"
 
     BASE_DIR: Path = BASE_DIR
-    WEBSITE_DIR: Path = BASE_DIR / "website"
-    # HTML профилей генерируются на диск и отдаются с сервера (не CDN): сессия /me, частые пересборки.
-    USERS_DIR: Path = WEBSITE_DIR / "data" / "users"
+    WEB_DIR: Path = BASE_DIR / "web"
+    WEBSITE_DIR: Path = WEB_DIR / "website"
+    # HTML профилей вне StaticFiles (/static), только через /me с сессией.
+    USERS_DIR: Path = WEB_DIR / "protected" / "users"
     URL: str = "http://ws.audioscrobbler.com/2.0/"
     MONGO_URI: str = "mongodb://localhost:27017"
 

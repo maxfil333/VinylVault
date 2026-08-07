@@ -1,5 +1,6 @@
 __*
-website/data/users/*
+web/website/data/users/*
+web/protected/users/*
 
 # Игнорировать каталоги и файлы конфигурации PyCharm
 .idea/
@@ -56,4 +57,5 @@ docker-compose.override.yml
 
 # Исключения
 !.gitignore
-!website/data/users/example.html
+!web/website/data/users/example.html
+!web/protected/users/.gitkeep

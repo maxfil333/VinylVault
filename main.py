@@ -15,7 +15,7 @@ from pydantic import EmailStr
 
 from src.config import cfg
 from src.models import VV_Album, VV_User, SearchResults
-from src.handlers import PageNotFoundHandler, register_exception_handlers
+from src.handlers import register_exception_handlers
 from src.lastfm_api.album_info import album_search, album_getinfo, album_search_async
 from src.lastfm_api.artist_info import artist_top_albums_async
 from src.database import get_users_collection, add_user, is_in_collection
@@ -37,7 +37,6 @@ AVATAR_ALLOWED_TYPES = {
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await init_database()
-    app.state.users_collection = await get_users_collection()
     yield
     await close_database()
 
@@ -59,8 +58,6 @@ users_collection_dep = Annotated[AsyncIOMotorCollection, Depends(get_users_colle
 session_cookies_dep = Annotated[AsyncIOMotorCollection, Depends(get_session_cookies_collection)]
 
 SESSION_COOKIES_KEY = 'vv_session_cookie'
-
-app.add_middleware(PageNotFoundHandler)
 
 
 # ___________________________ REGISTER | LOGIN | LOGOUT ___________________________
@@ -167,7 +164,7 @@ async def my_page(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
 
     user_id, username = session_data["user_id"], session_data["username"]
-    file_path = os.path.join(cfg.WEBSITE_DIR, "data", "users", f"{user_id}.html")
+    file_path = cfg.USERS_DIR / f"{user_id}.html"
     user_doc = await users_collection.find_one({"user_id": user_id})
     avatar_url = coalesce_avatar_url((user_doc or {}).get("avatar_url"))
     # Всегда пересобираем шаблон, чтобы подтянуть правки разметки (аватар и т.д.)
@@ -491,7 +488,7 @@ if __name__ == "__main__":
     import atexit
 
     def cleanup_users():
-        for f in glob.glob('../website/data/users/*.html'):
+        for f in glob.glob(str(cfg.USERS_DIR / "*.html")):
             os.unlink(f)
 
     atexit.register(cleanup_users)
@@ -500,8 +497,3 @@ if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 # todo: редирект с главной на welcome если нет куки, на my если есть куки
-
-# todo: https://chatgpt.com/share/686a8248-0344-8010-9dd2-4ef466f31b03
-# /my + удалить из свободного доступа users
-
-# todo: перенести users из website в protected

@@ -1,4 +1,4 @@
-"""Статика website/data/{avatars,backgrounds,other} в S3 без префикса data/ (ключи other/..., avatars/..., backgrounds/...)."""
+"""Статика web/website/data/{avatars,backgrounds,other} в S3 без префикса data/ (ключи other/..., avatars/..., backgrounds/...)."""
 
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from src.cdn.s3_async import s3_client
 
 
 def data_asset_public_url(relative_under_data: str) -> str:
-    """relative_under_data: 'other/logo.png' — относительно website/data/. URL = base/other/logo.png."""
+    """relative_under_data: 'other/logo.png' — относительно web/website/data/. URL = base/other/logo.png."""
     rel = relative_under_data.lstrip("/").replace("\\", "/")
     base = cfg.s3_base_domain.rstrip("/")
     return f"{base}/{rel}"
