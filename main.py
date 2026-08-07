@@ -16,8 +16,8 @@ from pydantic import EmailStr
 from src.config import cfg
 from src.models import VV_Album, VV_User, SearchResults
 from src.handlers import register_exception_handlers
-from src.lastfm_api.album_info import album_search, album_getinfo, album_search_async
-from src.lastfm_api.artist_info import artist_top_albums_async
+from src.lastfm_api.album_info import album_search, album_getinfo
+from src.lastfm_api.artist_info import artist_top_albums
 from src.database import get_users_collection, add_user, is_in_collection
 from src.database import get_session_cookies_collection, add_session, init_database, close_database
 from src.utils.utils import load_html
@@ -219,10 +219,10 @@ async def vv_data_theme_css():
 # ____________________________________ API ____________________________________
 
 @app.get("/api/search/albums/{album_name}", response_model=list[VV_Album])
-def search_album(album_name: str):
+async def search_album(album_name: str):
     """ Возвращает список найденных альбомов по запросу пользователя (legacy для фронта) """
     logger.info("")
-    search_results = album_search(album_name)
+    search_results = await album_search(album_name)
     albums: list[VV_Album] = []
     for x in search_results:
         albums.append(VV_Album.model_validate({
@@ -242,8 +242,8 @@ async def search_mixed(query: str):
 
     # Асинхронно запускаем оба запроса к внешнему API
     album_search_results, artist_top_results = await asyncio.gather(
-        album_search_async(query),
-        artist_top_albums_async(query)
+        album_search(query),
+        artist_top_albums(query)
     )
     albums_group: list[VV_Album] = []
     for x in album_search_results:
@@ -296,7 +296,7 @@ async def add_album(
     if session_data.get("user_id") != user_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    raw = album_getinfo(artist_name=album.artist_name, album_name=album.album_name)
+    raw = await album_getinfo(artist_name=album.artist_name, album_name=album.album_name)
     album_info = raw.get("album") if isinstance(raw, dict) else None
     if not album_info:
         detail = raw.get("error", "Альбом не найден в Last.fm") if isinstance(raw, dict) else "Альбом не найден в Last.fm"

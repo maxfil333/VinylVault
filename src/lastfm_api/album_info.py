@@ -1,15 +1,14 @@
-from src.config import cfg
-from src.utils.utils import send_request, send_request_async
+import asyncio
 from pprint import pprint
 
+from src.config import cfg
+from src.utils.utils import send_request_async
 
-def album_getinfo(artist_name: str, album_name: str, api_key: str = cfg.API_KEY) -> dict:
+
+async def album_getinfo(artist_name: str, album_name: str, api_key: str = cfg.API_KEY) -> dict:
     """
-    Get album by album_name and artist_name
-    :param artist_name: Имя артиста
-    :param album_name: Имя альбома
-    :param api_key: API ключ Last.fm
-    :return: Словарь с информацией об альбоме или сообщением об ошибке.
+    Get album by album_name and artist_name.
+    :return: Словарь с информацией об альбоме или {"error": "..."}.
     """
     params = {
         "method": "album.getInfo",
@@ -18,29 +17,11 @@ def album_getinfo(artist_name: str, album_name: str, api_key: str = cfg.API_KEY)
         "api_key": api_key,
         "format": "json",
     }
-    return send_request(params)
+    return await send_request_async(params)
 
 
-def album_search(album_name: str, api_key: str = cfg.API_KEY, limit=5) -> list[dict]:
-    """
-    Get albums list by album_name
-    :param album_name: Имя альбома
-    :param api_key: API ключ Last.fm
-    :param limit: Количество результатов
-    :return: Список словарей с информацией об альбоме или сообщением об ошибке.
-    """
-
-    params = {
-        "method": "album.search",
-        "album": album_name,
-        "api_key": api_key,
-        "limit": limit,
-        "format": "json",
-    }
-    return send_request(params).get('results', {}).get('albummatches', {}).get('album', [])
-
-
-async def album_search_async(album_name: str, api_key: str = cfg.API_KEY, limit=5) -> list[dict]:
+async def album_search(album_name: str, api_key: str = cfg.API_KEY, limit: int = 5) -> list[dict]:
+    """Get albums list by album_name."""
     params = {
         "method": "album.search",
         "album": album_name,
@@ -49,17 +30,17 @@ async def album_search_async(album_name: str, api_key: str = cfg.API_KEY, limit=
         "format": "json",
     }
     data = await send_request_async(params)
-    return data.get('results', {}).get('albummatches', {}).get('album', [])
+    return data.get("results", {}).get("albummatches", {}).get("album", [])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     artist_name = "Brutus"
     album_name = "Unison life"
 
-    album_data = album_getinfo(artist_name, album_name, cfg.API_KEY)
+    album_data = asyncio.run(album_getinfo(artist_name, album_name, cfg.API_KEY))
     pprint(album_data)
 
-    print('-' * 70)
+    print("-" * 70)
 
-    album_search_data = album_search(album_name, cfg.API_KEY, limit=5)
+    album_search_data = asyncio.run(album_search(album_name, cfg.API_KEY, limit=5))
     pprint(album_search_data)
