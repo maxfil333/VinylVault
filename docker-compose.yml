@@ -42,12 +42,14 @@ services:
     environment:
       ME_CONFIG_MONGODB_URL: mongodb://mongo:27017/?directConnection=true
       ME_CONFIG_SITE_BASEURL: /mongo
-      ME_CONFIG_BASICAUTH_ENABLED: "false"
-      ME_CONFIG_SITE_COOKIESECRET: dev-cookie-secret
-      ME_CONFIG_SITE_SESSIONSECRET: dev-session-secret
+      ME_CONFIG_BASICAUTH_ENABLED: "true"
+      ME_CONFIG_BASICAUTH_USERNAME: "${MONGO_EXPRESS_USER}"
+      ME_CONFIG_BASICAUTH_PASSWORD: "${MONGO_EXPRESS_PASSWORD}"
+      ME_CONFIG_SITE_COOKIESECRET: "${ME_COOKIE_SECRET}"
+      ME_CONFIG_SITE_SESSIONSECRET: "${ME_SESSION_SECRET}"
 
 volumes:
   mongo_data:
 
 # docker compose up --build
-# http://localhost:8081/mongo
+# http://localhost:8081/mongo  (basic auth: MONGO_EXPRESS_* from .env)
