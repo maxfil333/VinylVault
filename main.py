@@ -111,10 +111,10 @@ async def register(users_collection: users_collection_dep, session_cookies: sess
                    username: str = Form(...), password: str = Form(...), email: EmailStr = Form(...)):
     """ Обработчик регистрации. Принимает данные из HTML-формы и добавляет нового пользователя в базу данных. """
     logger.info("")
+    if await is_in_collection(field='username', value=username, collection=users_collection):
+        raise HTTPException(status_code=409, detail="User already exists")
     try:
         user = VV_User(username=username, password=hash_password(password), email=email)
-        if await is_in_collection(field='username', value=user.username, collection=users_collection):
-            raise HTTPException(status_code=409, detail="User already exists")
         new_user = await add_user(users_collection, user)
         logger.debug(f'New user is created: {new_user}')
     except Exception as e:
