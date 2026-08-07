@@ -296,10 +296,15 @@ async def add_album(
     if session_data.get("user_id") != user_id:
         raise HTTPException(status_code=403, detail="Access denied")
 
-    album_info = album_getinfo(artist_name=album.artist_name, album_name=album.album_name)['album']
+    raw = album_getinfo(artist_name=album.artist_name, album_name=album.album_name)
+    album_info = raw.get("album") if isinstance(raw, dict) else None
+    if not album_info:
+        detail = raw.get("error", "Альбом не найден в Last.fm") if isinstance(raw, dict) else "Альбом не найден в Last.fm"
+        raise HTTPException(status_code=404, detail=detail)
 
-    album.cover_url = album_info['image'][-1]['#text']
-    album.cover_url_reserve = album_info['image'][-2]['#text']
+    images = album_info.get("image") or []
+    album.cover_url = (images[-1] or {}).get("#text", "") if images else ""
+    album.cover_url_reserve = (images[-2] or {}).get("#text", "") if len(images) > 1 else ""
 
     # Получаем текущее количество альбомов пользователя для установки порядка
     user = await users_collection.find_one({"user_id": user_id})
