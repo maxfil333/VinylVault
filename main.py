@@ -25,6 +25,7 @@ from src.utils.logger import logger
 from src.pages import generate_user_page
 from src.cdn.s3_avatars import coalesce_avatar_url, upload_user_avatar_to_s3
 from src.cdn.data_cdn import build_vv_theme_css, patch_html_with_cdn_assets
+from src.utils.passwords import hash_password, verify_password
 AVATAR_UPLOAD_MAX_BYTES = 5 * 1024 * 1024
 AVATAR_ALLOWED_TYPES = {
     "image/jpeg": ".jpg",
@@ -68,9 +69,10 @@ async def verify_login_password(username: str, password: str,
                                 users_collection: users_collection_dep) -> Optional[VV_User]:
     """ Проверяет логин и пароль пользователя и возвращает пользователя из базы данных. """
     logger.info("")
-    if user := await users_collection.find_one({"username": username, "password": password}):
-        return VV_User.model_validate(user)
-    raise HTTPException(status_code=401, detail="Invalid login or password")
+    user_doc = await users_collection.find_one({"username": username})
+    if not user_doc or not verify_password(password, user_doc.get("password", "")):
+        raise HTTPException(status_code=401, detail="Invalid login or password")
+    return VV_User.model_validate(user_doc)
 
 
 def generate_session_id() -> str:
@@ -110,7 +112,7 @@ async def register(users_collection: users_collection_dep, session_cookies: sess
     """ Обработчик регистрации. Принимает данные из HTML-формы и добавляет нового пользователя в базу данных. """
     logger.info("")
     try:
-        user = VV_User(username=username, password=password, email=email)
+        user = VV_User(username=username, password=hash_password(password), email=email)
         if await is_in_collection(field='username', value=user.username, collection=users_collection):
             raise HTTPException(status_code=409, detail="User already exists")
         new_user = await add_user(users_collection, user)

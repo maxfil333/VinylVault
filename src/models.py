@@ -17,7 +17,7 @@ class VV_Album(BaseModel):
 class VV_User(BaseModel):
     user_id: str = Field(default_factory=lambda: str(ObjectId()))
     username: str
-    password: str  # Хэшированный пароль
+    password: str  # bcrypt-хэш
     email: EmailStr
     albums: list[VV_Album] = Field(default_factory=list)
     avatar_url: Optional[str] = None  # CDN: other/default_avatar.jpg или avatars/{user_id}.ext
