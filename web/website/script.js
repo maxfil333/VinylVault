@@ -539,36 +539,34 @@ function addAlbumBySearchGrouped(result) {
 // --- Обработчик кнопки поиска searchAlbumBtn (Найти альбом) ---
 
 // PRESS ENTER
-albumSearchInput.addEventListener('keydown', function (event) {
-    if (event.key === 'Enter') {
-        isSearchButtonClick = true; // Устанавливаем флаг перед программным кликом
-        searchAlbumBtn.click();
-    }
-});
+if (albumSearchInput && searchAlbumBtn) {
+    albumSearchInput.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            isSearchButtonClick = true;
+            searchAlbumBtn.click();
+        }
+    });
 
-searchAlbumBtn.addEventListener('click', async () => {
-    const albumName = albumSearchInput.value.trim();
-    if (albumName === '') {
-        return;
-    }
+    searchAlbumBtn.addEventListener('click', async () => {
+        const albumName = albumSearchInput.value.trim();
+        if (albumName === '') {
+            return;
+        }
 
-    try {
-        // API call (сгруппированный поиск)
-        const data = await searchMixed(albumName);
-        addAlbumBySearchGrouped(data);
-        
-        // Сбрасываем флаг после завершения поиска
-        setTimeout(() => {
-            isSearchButtonClick = false;
-        }, 0);
-    } catch (error) {
-        console.error('Ошибка при поиске альбомов:', error);
-        // Сбрасываем флаг даже при ошибке
-        setTimeout(() => {
-            isSearchButtonClick = false;
-        }, 0);
-    }
-});
+        try {
+            const data = await searchMixed(albumName);
+            addAlbumBySearchGrouped(data);
+            setTimeout(() => {
+                isSearchButtonClick = false;
+            }, 0);
+        } catch (error) {
+            console.error('Ошибка при поиске альбомов:', error);
+            setTimeout(() => {
+                isSearchButtonClick = false;
+            }, 0);
+        }
+    });
+}
 
 if (!albumList && albumSearchInput) {
     let welcomeSearchTimer;
