@@ -81,7 +81,7 @@ async def get_session_data(
     session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None),
 ) -> dict:
     """ Получить информацию о сессии по Cookie """
-    logger.debug(f"Получил куку: {session_id!r}")
+    logger.debug("Получил куку сессии" if session_id else "Куки сессии нет")
     if not session_id:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -97,7 +97,7 @@ async def _cookie_create_and_set(session_cookies: AsyncIOMotorCollection, user: 
     await add_session(collection=session_cookies, session_id=session_id, user=user)
     response = RedirectResponse(url=f"/me", status_code=303)
     response.set_cookie(key=SESSION_COOKIES_KEY, value=session_id, httponly=True)
-    logger.debug(f"Установлена кука: {session_id!r}")
+    logger.debug("Установлена кука сессии")
     return response
 
 
@@ -145,7 +145,7 @@ async def logout(session_cookies: session_cookies_dep,
     if session_id:
         # Удаляем сессию из базы данных
         await session_cookies.delete_one({'session_id': session_id})
-        logger.debug(f"Удалена сессия: {session_id!r}")
+        logger.debug("Удалена сессия")
 
     # Создаем ответ с редиректом на welcome и очищаем cookie
     response = RedirectResponse(url="/welcome", status_code=303)
@@ -418,7 +418,7 @@ async def check_auth(
     session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None),
 ):
     """ Проверяет статус авторизации пользователя. Возвращает is_authenticated: true/false """
-    logger.debug(f"Проверка авторизации: {session_id!r}")
+    logger.debug("Проверка авторизации")
     if not session_id:
         return {"is_authenticated": False}
     session = await session_cookies_collection.find_one({'session_id': session_id})

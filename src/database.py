@@ -1,4 +1,5 @@
 import asyncio
+from urllib.parse import urlsplit, urlunsplit
 from typing import Optional
 from datetime import datetime
 from pymongo.results import InsertOneResult
@@ -13,10 +14,22 @@ MONGO_CONNECT_RETRIES = 5
 MONGO_CONNECT_RETRY_DELAY_SEC = 2.0
 
 
+def _redact_mongo_uri(uri: str) -> str:
+    parts = urlsplit(uri)
+    if not parts.password:
+        return uri
+    host = parts.hostname or ""
+    if parts.port:
+        host = f"{host}:{parts.port}"
+    user = parts.username or ""
+    netloc = f"{user}:***@{host}"
+    return urlunsplit((parts.scheme, netloc, parts.path, parts.query, parts.fragment))
+
+
 async def mongo_connect(host: str | None = None) -> AsyncIOMotorClient:
     """ Подключение к локальной базе данных MongoDB """
     uri = host or cfg.MONGO_URI
-    logger.info(f"Подключение к MongoDB: {uri}")
+    logger.info(f"Подключение к MongoDB: {_redact_mongo_uri(uri)}")
     client = AsyncIOMotorClient(uri, serverSelectionTimeoutMS=int(MONGO_PING_TIMEOUT_SEC * 1000))
     return client
 
