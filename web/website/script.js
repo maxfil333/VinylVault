@@ -18,6 +18,10 @@ const saveCancelControls = document.getElementById('save-cancel-controls');
 let isEditMode = false;
 let originalOrder = [];
 let draggedElement = null;
+let pendingDeletes = new Set();
+let pendingAvatarFile = null;
+let originalAvatarSrc = null;
+let pendingAvatarObjectUrl = null;
 
 
 //---------------------------------------------------------------------------------------------------------------- UTILS
@@ -163,19 +167,16 @@ function setupAvatarControls() {
 
     setAvatarEditVisible(false);
 
-    input.addEventListener('change', async () => {
+    input.addEventListener('change', () => {
         const file = input.files && input.files[0];
         input.value = '';
-        if (!file) return;
-        try {
-            const data = await uploadAvatar(file);
-            if (data && data.avatar_url) {
-                img.src = `${data.avatar_url}?t=${Date.now()}`;
-            }
-        } catch (e) {
-            console.error(e);
-            alert(e.message || 'Не удалось загрузить аватар');
+        if (!file || !isEditMode) return;
+        if (pendingAvatarObjectUrl) {
+            URL.revokeObjectURL(pendingAvatarObjectUrl);
         }
+        pendingAvatarFile = file;
+        pendingAvatarObjectUrl = URL.createObjectURL(file);
+        img.src = pendingAvatarObjectUrl;
     });
 }
 
@@ -233,25 +234,18 @@ async function deleteAlbumFromServer(album_id) {
 
     const user_id = await getUserIdFromSession();
     if (!user_id) {
-        console.error('user_id не найден в cookie!');
-        return;
+        throw new Error('user_id не найден в cookie!');
     }
 
     const url = `${serverAddress}api/users/${user_id}/albums/delete/${album_id}`;
 
     logRequestDetails('DELETE', url, requestOptions.headers);
 
-    try {
-        const response = await fetch(url, requestOptions);
-        if (!response.ok) {
-            throw new Error(`Ошибка: ${response.status}`);
-        }
-        const data = await response.json();
-        console.log('Ответ от сервера:', data);
-    } catch (error) {
-        console.error('Ошибка при удалении альбома:', error);
-        console.log('Не удалось удалить альбом с сервера!');
+    const response = await fetch(url, requestOptions);
+    if (!response.ok) {
+        throw new Error(`Ошибка: ${response.status}`);
     }
+    return await response.json();
 }
 
 
@@ -449,12 +443,10 @@ function createAlbumCard(album) {
     deleteButton.textContent = '❌';
     deleteButton.style.display = isEditMode ? 'block' : 'none'; // Скрываем кнопку по умолчанию
     deleteButton.onclick = (event) => {
-        event.stopPropagation(); // Останавливаем всплытие события
-        li.remove(); // Удаляем элемент из DOM
-        deleteAlbumFromServer(album.album_id) // Удаляем альбом на сервере
-            .then(() => {
-                console.log(`Альбом ${album.album_name} от ${album.artist_name} успешно удалён с сервера`);
-            });
+        event.stopPropagation();
+        if (!isEditMode) return;
+        pendingDeletes.add(album.album_id);
+        li.remove();
     };
 
     // Собираем карточку
@@ -573,11 +565,22 @@ searchAlbumBtn.addEventListener('click', async () => {
 
 //------------------------------------------------------------------------------------------------- РЕЖИМ РЕДАКТИРОВАНИЯ
 
-// Функция для включения режима редактирования
+function setSearchEnabled(enabled) {
+    if (albumSearchInput) albumSearchInput.disabled = !enabled;
+    if (searchAlbumBtn) searchAlbumBtn.disabled = !enabled;
+    if (!enabled && LfmSearchDropdownMenu) {
+        LfmSearchDropdownMenu.style.display = 'none';
+    }
+}
+
 function enableEditMode() {
     isEditMode = true;
     editBtn.style.display = 'none';
     saveCancelControls.style.display = 'flex';
+    pendingDeletes = new Set();
+    pendingAvatarFile = null;
+    const avatarImg = document.getElementById('user-avatar');
+    originalAvatarSrc = avatarImg ? avatarImg.src : null;
     
     // Сохраняем оригинальный порядок
     originalOrder = Array.from(albumList.children).map(li => ({
@@ -595,6 +598,7 @@ function enableEditMode() {
     showDeleteButtons();
 
     setAvatarEditVisible(true);
+    setSearchEnabled(false);
 }
 
 // Функция для отключения режима редактирования
@@ -613,6 +617,7 @@ function disableEditMode() {
     hideDeleteButtons();
 
     setAvatarEditVisible(false);
+    setSearchEnabled(true);
 }
 
 // Функция для создания drag-and-drop функциональности
@@ -743,57 +748,76 @@ function handleDrop(e) {
     // Финализируем позицию (элемент уже перемещен в handleDragOver)
 }
 
-// Функция для сохранения нового порядка
 async function saveAlbumOrder() {
     const user_id = await getUserIdFromSession();
     if (!user_id) {
         console.error('user_id не найден в cookie!');
         return;
     }
-    
-    // Получаем новый порядок альбомов
-    const newOrder = Array.from(albumList.children).map((li, index) => ({
-        album_id: li.dataset.albumId,
-        order: index
-    }));
-    
-    const requestOptions = {
-        method: 'PUT',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(newOrder),
-    };
-    
-    const url = `${serverAddress}api/users/${user_id}/albums/reorder/`;
-    
+
     try {
-        const response = await fetch(url, requestOptions);
-        if (!response.ok) {
-            throw new Error(`Ошибка: ${response.status}`);
+        for (const album_id of [...pendingDeletes]) {
+            await deleteAlbumFromServer(album_id);
+            pendingDeletes.delete(album_id);
         }
-        
-        const data = await response.json();
-        console.log('Порядок альбомов сохранен:', data);
-        
-        // Отключаем режим редактирования
+
+        const newOrder = Array.from(albumList.children).map((li, index) => ({
+            album_id: li.dataset.albumId,
+            order: index
+        }));
+
+        if (newOrder.length > 0) {
+            const requestOptions = {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(newOrder),
+            };
+            const url = `${serverAddress}api/users/${user_id}/albums/reorder/`;
+            const response = await fetch(url, requestOptions);
+            if (!response.ok) {
+                throw new Error(`Ошибка: ${response.status}`);
+            }
+        }
+
+        if (pendingAvatarFile) {
+            const data = await uploadAvatar(pendingAvatarFile);
+            const avatarImg = document.getElementById('user-avatar');
+            if (avatarImg && data && data.avatar_url) {
+                avatarImg.src = `${data.avatar_url}?t=${Date.now()}`;
+            }
+        }
+
+        if (pendingAvatarObjectUrl) {
+            URL.revokeObjectURL(pendingAvatarObjectUrl);
+            pendingAvatarObjectUrl = null;
+        }
+        pendingAvatarFile = null;
         disableEditMode();
-        
     } catch (error) {
-        console.error('Ошибка при сохранении порядка альбомов:', error);
-        alert('Не удалось сохранить порядок альбомов');
+        console.error('Ошибка при сохранении изменений:', error);
+        alert('Не удалось сохранить изменения');
     }
 }
 
-// Функция для отмены изменений
 function cancelEdit() {
-    // Восстанавливаем оригинальный порядок
     albumList.innerHTML = '';
     originalOrder.forEach(item => {
         albumList.appendChild(item.element);
     });
-    
-    // Отключаем режим редактирования
+
+    const avatarImg = document.getElementById('user-avatar');
+    if (avatarImg && originalAvatarSrc) {
+        avatarImg.src = originalAvatarSrc;
+    }
+    if (pendingAvatarObjectUrl) {
+        URL.revokeObjectURL(pendingAvatarObjectUrl);
+        pendingAvatarObjectUrl = null;
+    }
+    pendingAvatarFile = null;
+    pendingDeletes = new Set();
+
     disableEditMode();
 }
 
