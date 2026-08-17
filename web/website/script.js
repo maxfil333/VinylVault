@@ -484,9 +484,14 @@ function addAlbumBySearchGrouped(result) {
         }
 
         items.forEach((album) => {
-            const item = document.createElement('div');
+            const item = document.createElement(albumList ? 'div' : 'a');
             item.className = 'dropdown-item d-flex align-items-center justify-content-between';
             item.style.cursor = 'pointer';
+            if (!albumList) {
+                item.href = '/explore';
+                item.style.textDecoration = 'none';
+                item.style.color = 'inherit';
+            }
 
             const textSpan = document.createElement('span');
             textSpan.textContent = `${album.album_name} — ${album.artist_name}`;
@@ -508,13 +513,15 @@ function addAlbumBySearchGrouped(result) {
             item.appendChild(textSpan);
             item.appendChild(img);
 
-            item.addEventListener('click', () => {
-                const li = createAlbumCard(album);
-                albumList.appendChild(li);
-                albumSearchInput.value = '';
-                sendAlbumToServer(album);
-                LfmSearchDropdownMenu.style.display = 'none';
-            });
+            if (albumList) {
+                item.addEventListener('click', () => {
+                    const li = createAlbumCard(album);
+                    albumList.appendChild(li);
+                    albumSearchInput.value = '';
+                    sendAlbumToServer(album);
+                    LfmSearchDropdownMenu.style.display = 'none';
+                });
+            }
 
             LfmSearchDropdownMenu.appendChild(item);
         });
@@ -562,6 +569,26 @@ searchAlbumBtn.addEventListener('click', async () => {
         }, 0);
     }
 });
+
+if (!albumList && albumSearchInput) {
+    let welcomeSearchTimer;
+    albumSearchInput.addEventListener('input', () => {
+        clearTimeout(welcomeSearchTimer);
+        const query = albumSearchInput.value.trim();
+        welcomeSearchTimer = setTimeout(async () => {
+            if (!query) {
+                if (LfmSearchDropdownMenu) LfmSearchDropdownMenu.style.display = 'none';
+                return;
+            }
+            try {
+                const data = await searchMixed(query);
+                addAlbumBySearchGrouped(data);
+            } catch (error) {
+                console.error('Ошибка при поиске альбомов:', error);
+            }
+        }, 400);
+    });
+}
 
 //------------------------------------------------------------------------------------------------- РЕЖИМ РЕДАКТИРОВАНИЯ
 
