@@ -97,7 +97,12 @@ async def _cookie_create_and_set(session_cookies: AsyncIOMotorCollection, user: 
     session_id = generate_session_id()
     await add_session(collection=session_cookies, session_id=session_id, user=user)
     response = RedirectResponse(url=f"/me", status_code=303)
-    response.set_cookie(key=SESSION_COOKIES_KEY, value=session_id, httponly=True)
+    response.set_cookie(
+        key=SESSION_COOKIES_KEY,
+        value=session_id,
+        httponly=True,
+        max_age=cfg.SESSION_TTL_SEC,
+    )
     logger.debug("Установлена кука сессии")
     return response
 
