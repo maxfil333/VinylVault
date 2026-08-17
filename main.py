@@ -10,6 +10,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, Resp
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import EmailStr
+from pymongo.errors import DuplicateKeyError
 
 from src.config import cfg
 from src.models import VV_Album, VV_User, SearchResults
@@ -112,6 +113,8 @@ async def register(users_collection: users_collection_dep, session_cookies: sess
         user = VV_User(username=username, password=hash_password(password), email=email)
         new_user = await add_user(users_collection, user)
         logger.debug(f'New user is created: {new_user}')
+    except DuplicateKeyError:
+        return RedirectResponse(url="/register?error=exists", status_code=303)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при регистрации пользователя: {e}")
     # Генерируем страницу для нового пользователя (имя файла совпадает с VV_User.user_id)

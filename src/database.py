@@ -60,6 +60,7 @@ async def init_database():
                 timeout=MONGO_PING_TIMEOUT_SEC,
             )
             VINYL_VAULT_DB = await get_db(MONGO_CLIENT, 'VinylVault')
+            await VINYL_VAULT_DB["users_collection"].create_index("username", unique=True)
             logger.info("MongoDB подключение инициализировано")
             return
         except (TimeoutError, Exception) as exc:
