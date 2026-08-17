@@ -109,7 +109,7 @@ async def register(users_collection: users_collection_dep, session_cookies: sess
     """ Обработчик регистрации. Принимает данные из HTML-формы и добавляет нового пользователя в базу данных. """
     logger.info("")
     if await is_in_collection(field='username', value=username, collection=users_collection):
-        raise HTTPException(status_code=409, detail="User already exists")
+        return RedirectResponse(url="/register?error=exists", status_code=303)
     try:
         user = VV_User(username=username, password=hash_password(password), email=email)
         new_user = await add_user(users_collection, user)
@@ -128,7 +128,12 @@ async def login(users_collection: users_collection_dep, session_cookies: session
                 username: str = Form(...), password: str = Form(...)):
     """ Обработчик логина. Принимает данные из HTML-формы и возвращает пользователя из базы данных. """
     logger.info("")
-    user = await verify_login_password(username, password, users_collection)
+    try:
+        user = await verify_login_password(username, password, users_collection)
+    except HTTPException as exc:
+        if exc.status_code == 401:
+            return RedirectResponse(url="/login?error=invalid", status_code=303)
+        raise
     # Создаем сессию и устанавливаем cookie, чтобы /me открыл страницу текущего пользователя
     response = await _cookie_create_and_set(session_cookies=session_cookies, user=user)
     return response
