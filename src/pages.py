@@ -1,3 +1,5 @@
+from html import escape
+
 import aiofiles
 
 from src.config import cfg
@@ -6,8 +8,9 @@ from src.cdn.s3_avatars import coalesce_avatar_url
 
 
 async def generate_user_page(user_id: str, username: str, avatar_url: str | None = None):
-    avatar_url = coalesce_avatar_url(avatar_url)
-    logo_url = data_asset_public_url("other/VVlogo_solo_cr.png")
+    avatar_url = escape(coalesce_avatar_url(avatar_url), quote=True)
+    logo_url = escape(data_asset_public_url("other/VVlogo_solo_cr.png"), quote=True)
+    username = escape(username, quote=True)
 
     html_content = f"""
     
