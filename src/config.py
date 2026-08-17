@@ -26,6 +26,7 @@ class Config(BaseSettings):
     USERS_DIR: Path = WEB_DIR / "protected" / "users"
     URL: str = "http://ws.audioscrobbler.com/2.0/"
     MONGO_URI: str = "mongodb://localhost:27017"
+    # Срок сессии: TTL в Mongo по login_time и Max-Age cookie.
     SESSION_TTL_SEC: int = 14 * 24 * 60 * 60
 
 

@@ -1,7 +1,7 @@
 import asyncio
 from urllib.parse import urlsplit, urlunsplit
 from typing import Optional
-from datetime import datetime
+from datetime import datetime, timezone
 from pymongo.results import InsertOneResult
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorCollection, AsyncIOMotorDatabase
 
@@ -99,7 +99,7 @@ async def add_session(collection: AsyncIOMotorCollection, session_id: str, user:
             session_id=session_id,
             user_id=user.user_id,
             username=user.username,
-            login_time=datetime.now()
+            login_time=datetime.now(timezone.utc)
         ).model_dump()
     )
 
