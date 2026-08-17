@@ -98,7 +98,7 @@ async def _cookie_create_and_set(session_cookies: AsyncIOMotorCollection, user: 
     session_id = generate_session_id()
     await add_session(collection=session_cookies, session_id=session_id, user=user)
     response = RedirectResponse(url=f"/me", status_code=303)
-    response.set_cookie(key=SESSION_COOKIES_KEY, value=session_id)
+    response.set_cookie(key=SESSION_COOKIES_KEY, value=session_id, httponly=True)
     logger.debug(f"Установлена кука: {session_id!r}")
     return response
 
@@ -146,7 +146,7 @@ async def logout(session_cookies: session_cookies_dep,
 
     # Создаем ответ с редиректом на welcome и очищаем cookie
     response = RedirectResponse(url="/welcome", status_code=303)
-    response.delete_cookie(key=SESSION_COOKIES_KEY)
+    response.delete_cookie(key=SESSION_COOKIES_KEY, httponly=True)
     return response
 
 
