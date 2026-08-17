@@ -1,5 +1,3 @@
-import os
-import glob
 import time
 import uuid
 import uvicorn
@@ -501,16 +499,6 @@ app.mount("/static", StaticFiles(directory=cfg.WEBSITE_DIR))
 
 
 if __name__ == "__main__":
-    # ___ >>> DEBUG ___
-    import atexit
-
-    def cleanup_users():
-        for f in glob.glob(str(cfg.USERS_DIR / "*.html")):
-            os.unlink(f)
-
-    atexit.register(cleanup_users)
-    # ___ <<< DEBUG ___
-
     uvicorn.run(app, host="0.0.0.0", port=8000)
 
 # todo: редирект с главной на welcome если нет куки, на my если есть куки
