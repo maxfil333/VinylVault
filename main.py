@@ -197,6 +197,13 @@ async def welcome_page():
     return HTMLResponse(content=content)
 
 
+@app.api_route("/explore", methods=["GET", "POST"])
+async def explore(session_data: dict = Depends(get_session_data)):
+    if not session_data:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
+    return RedirectResponse(url="/me", status_code=303)
+
+
 @app.get("/testuser", response_class=HTMLResponse)
 async def testuser():
     content = patch_html_with_cdn_assets(load_html("user_page_example.html", cfg.WEBSITE_DIR))
