@@ -22,8 +22,6 @@ class Config(BaseSettings):
     BASE_DIR: Path = BASE_DIR
     WEB_DIR: Path = BASE_DIR / "web"
     WEBSITE_DIR: Path = WEB_DIR / "website"
-    # HTML профилей вне StaticFiles (/static), только через /me с сессией.
-    USERS_DIR: Path = WEB_DIR / "protected" / "users"
     URL: str = "http://ws.audioscrobbler.com/2.0/"
     MONGO_URI: str = "mongodb://localhost:27017"
     # Срок сессии: TTL в Mongo по login_time и Max-Age cookie.

@@ -1,13 +1,10 @@
 from html import escape
 
-import aiofiles
-
-from src.config import cfg
 from src.cdn.data_cdn import data_asset_public_url, html_inject_cdn_head
 from src.cdn.s3_avatars import coalesce_avatar_url
 
 
-async def generate_user_page(user_id: str, username: str, avatar_url: str | None = None):
+def render_user_page(username: str, avatar_url: str | None = None) -> str:
     avatar_url = escape(coalesce_avatar_url(avatar_url), quote=True)
     logo_url = escape(data_asset_public_url("other/VVlogo_solo_cr.png"), quote=True)
     username = escape(username, quote=True)
@@ -99,8 +96,4 @@ async def generate_user_page(user_id: str, username: str, avatar_url: str | None
 
     
     """
-    cfg.USERS_DIR.mkdir(parents=True, exist_ok=True)
-    page_path = cfg.USERS_DIR / f"{user_id}.html"
-
-    async with aiofiles.open(page_path, "w", encoding="utf-8") as f:
-        await f.write(html_content)
+    return html_content

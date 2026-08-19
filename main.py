@@ -5,7 +5,7 @@ import asyncio
 from contextlib import asynccontextmanager
 from typing import Annotated, Optional
 from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, UploadFile, File, Request
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import EmailStr
@@ -23,7 +23,7 @@ from src.database import get_users_collection, add_user, is_in_collection
 from src.database import get_session_cookies_collection, add_session, init_database, close_database
 from src.utils.utils import load_html
 from src.utils.logger import logger
-from src.pages import generate_user_page
+from src.pages import render_user_page
 from src.cdn.s3_avatars import coalesce_avatar_url, upload_user_avatar_to_s3
 from src.cdn.data_cdn import build_vv_theme_css, patch_html_with_cdn_assets
 from src.utils.passwords import hash_password, verify_password
@@ -125,8 +125,6 @@ async def register(request: Request, users_collection: users_collection_dep, ses
         return RedirectResponse(url="/register?error=exists", status_code=303)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка при регистрации пользователя: {e}")
-    # Генерируем страницу для нового пользователя (имя файла совпадает с VV_User.user_id)
-    await generate_user_page(user_id=user.user_id, username=username)
     # Создаем сессию и устанавливаем cookie, чтобы /me открыл страницу текущего пользователя
     response = await _cookie_create_and_set(session_cookies=session_cookies, user=user, request=request)
     return response
@@ -171,7 +169,7 @@ async def logout(request: Request, session_cookies: session_cookies_dep,
 
 # _____________________________ PAGES _____________________________
 
-@app.get("/me")
+@app.get("/me", response_class=HTMLResponse)
 async def my_page(
     users_collection: users_collection_dep,
     session_data: dict = Depends(get_session_data),
@@ -182,19 +180,18 @@ async def my_page(
     if not session_data:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
 
-    user_id, username = session_data["user_id"], session_data["username"]
-    file_path = cfg.USERS_DIR / f"{user_id}.html"
+    user_id = session_data["user_id"]
+    username = session_data["username"]
     user_doc = await users_collection.find_one({"user_id": user_id})
     avatar_url = coalesce_avatar_url((user_doc or {}).get("avatar_url"))
-    # Всегда пересобираем шаблон, чтобы подтянуть правки разметки (аватар и т.д.)
-    await generate_user_page(user_id=user_id, username=username, avatar_url=avatar_url)
+    content = render_user_page(username=username, avatar_url=avatar_url)
 
     headers = {
-        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",  # запрет на хранение содержимого в кеше
-        "Pragma": "no-cache",  # устаревший заголовок HTTP/1.0
-        "Expires": "0"  # устаревший заголовок HTTP/1.0
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+        "Pragma": "no-cache",
+        "Expires": "0",
     }
-    return FileResponse(path=file_path, media_type="text/html", headers=headers)
+    return HTMLResponse(content=content, headers=headers)
 
 
 # _____________________________ HTMLResponse _____________________________
