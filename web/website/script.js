@@ -22,6 +22,9 @@ let pendingDeletes = new Set();
 let pendingAvatarFile = null;
 let originalAvatarSrc = null;
 let pendingAvatarObjectUrl = null;
+let currentProfileUserId = null;
+let currentProfileUsername = null;
+let isOwnProfilePage = false;
 
 
 //---------------------------------------------------------------------------------------------------------------- UTILS
@@ -117,6 +120,12 @@ async function getUserIdFromSession() {
 
 async function loadUserProfile() {
     const response = await fetch(serverAddress + 'api/me/profile', { credentials: 'include' });
+    if (!response.ok) return null;
+    return await response.json();
+}
+
+async function loadPublicProfile(username) {
+    const response = await fetch(`${serverAddress}api/profiles/${encodeURIComponent(username)}`);
     if (!response.ok) return null;
     return await response.json();
 }
@@ -224,36 +233,14 @@ async function sendAlbumToServer(album_search_item) {
 }
 
 
-// Функция удаления альбома с сервера ( @app.delete("/albums/") )
-async function deleteAlbumFromServer(album_id) {
-
-    const requestOptions = {
-        method: 'DELETE',
-        headers: {'Content-Type': 'application/json'}
-    };
-
-    const user_id = await getUserIdFromSession();
-    if (!user_id) {
-        throw new Error('user_id не найден в cookie!');
-    }
-
-    const url = `${serverAddress}api/users/${user_id}/albums/delete/${album_id}`;
-
-    logRequestDetails('DELETE', url, requestOptions.headers);
-
-    const response = await fetch(url, requestOptions);
-    if (!response.ok) {
-        throw new Error(`Ошибка: ${response.status}`);
-    }
-    return await response.json();
-}
-
-
 // Функция для поиска релевантных альбомов и топ-альбомов артиста ( /api/search/mixed/{query} )
 async function searchMixed(query) {
     const url = serverAddress + 'api/search/mixed/' + encodeURIComponent(query);
     console.log(`GET: ${url}`);
-    const response = await fetch(url);
+    const response = await fetch(url, { credentials: 'include' });
+    if (!response.ok) {
+        throw new Error(`Ошибка поиска: ${response.status}`);
+    }
     return await response.json();
 }
 
@@ -261,7 +248,7 @@ async function searchMixed(query) {
 // Загрузка альбомов пользователя из базы ( app.get("/api/users/{user_id}/albums/all/", response_model=list[VV_Album]) )
 async function loadUserAlbums(userId) {
     try {
-        const response = await fetch(`${serverAddress}api/users/${userId}/albums/all/`);
+        const response = await fetch(`${serverAddress}api/users/${userId}/albums/all/`, { credentials: 'include' });
         const albums = await response.json();
 
         albumList.innerHTML = ''; // Очищаем список перед добавлением новых альбомов
@@ -273,6 +260,22 @@ async function loadUserAlbums(userId) {
 
     } catch (error) {
         console.error("Ошибка загрузки альбомов:", error);
+    }
+}
+
+async function loadPublicUserAlbums(username) {
+    try {
+        const response = await fetch(`${serverAddress}api/profiles/${encodeURIComponent(username)}/albums`);
+        const albums = await response.json();
+
+        albumList.innerHTML = '';
+
+        albums.forEach(album => {
+            const albumCard = createAlbumCard(album);
+            albumList.appendChild(albumCard);
+        });
+    } catch (error) {
+        console.error("Ошибка загрузки публичных альбомов:", error);
     }
 }
 
@@ -298,34 +301,91 @@ function setupLogoutButton() {
     }
 }
 
+function setupShareProfileButton() {
+    const shareBtn = document.getElementById('share-profile-btn');
+    if (!shareBtn) return;
+
+    shareBtn.addEventListener('click', async () => {
+        const profileUrl = new URL(window.location.pathname, window.location.origin).toString();
+
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(profileUrl);
+                shareBtn.textContent = 'Copied';
+                setTimeout(() => {
+                    shareBtn.textContent = 'Share';
+                }, 1500);
+                return;
+            }
+        } catch (error) {
+            console.error('Не удалось скопировать ссылку:', error);
+        }
+
+        window.prompt('Ссылка на профиль:', profileUrl);
+    });
+}
+
 // ... вызов функции при загрузке страницы
 document.addEventListener("DOMContentLoaded", async () => {
     const pageType = document.querySelector("meta[name='page-type']")?.content;
 
     if (pageType === "user") {
         console.log("✅ Это страница пользователя. Загружаем альбомы...");
-        const userId = await getUserIdFromSession(); // Теперь await работает корректно
-        if (!userId) {
-            console.error('user_id не найден в cookie!');
+        currentProfileUsername = document.querySelector("meta[name='profile-username']")?.content || null;
+        isOwnProfilePage = document.querySelector("meta[name='is-owner']")?.content === 'true';
+        const isAuthenticated = document.querySelector("meta[name='is-authenticated']")?.content === 'true';
+        if (!currentProfileUsername) {
+            console.error('username профиля не найден на странице');
             return;
         }
-        loadUserAlbums(userId);
-        setupLogoutButton();
-        setupAvatarControls();
-        try {
-            const profile = await loadUserProfile();
-            if (profile && profile.avatar_url) {
-                const avatarEl = document.getElementById('user-avatar');
-                if (avatarEl) {
-                    avatarEl.src = `${profile.avatar_url}?t=${Date.now()}`;
-                }
-                const nameEl = document.getElementById('profile-username');
-                if (nameEl && profile.username) {
-                    nameEl.textContent = profile.username;
-                }
+        setupShareProfileButton();
+        if (isAuthenticated) {
+            setupLogoutButton();
+        }
+
+        if (isOwnProfilePage) {
+            const userId = await getUserIdFromSession(); // Теперь await работает корректно
+            if (!userId) {
+                console.error('user_id не найден в cookie!');
+                return;
             }
-        } catch (e) {
-            console.error('Профиль не загружен:', e);
+            currentProfileUserId = userId;
+            await loadUserAlbums(userId);
+            setupAvatarControls();
+            try {
+                const profile = await loadUserProfile();
+                if (profile) {
+                    currentProfileUserId = profile.user_id || currentProfileUserId;
+                    const avatarEl = document.getElementById('user-avatar');
+                    if (avatarEl && profile.avatar_url) {
+                        avatarEl.src = `${profile.avatar_url}?t=${Date.now()}`;
+                    }
+                    const nameEl = document.getElementById('profile-username');
+                    if (nameEl && profile.username) {
+                        nameEl.textContent = profile.username;
+                    }
+                }
+            } catch (e) {
+                console.error('Профиль не загружен:', e);
+            }
+        } else {
+            try {
+                const profile = await loadPublicProfile(currentProfileUsername);
+                if (profile) {
+                    currentProfileUserId = profile.user_id || null;
+                    const avatarEl = document.getElementById('user-avatar');
+                    if (avatarEl && profile.avatar_url) {
+                        avatarEl.src = `${profile.avatar_url}?t=${Date.now()}`;
+                    }
+                    const nameEl = document.getElementById('profile-username');
+                    if (nameEl && profile.username) {
+                        nameEl.textContent = profile.username;
+                    }
+                }
+            } catch (e) {
+                console.error('Публичный профиль не загружен:', e);
+            }
+            await loadPublicUserAlbums(currentProfileUsername);
         }
     }
 });
@@ -599,6 +659,7 @@ function setSearchEnabled(enabled) {
 }
 
 function enableEditMode() {
+    if (!isOwnProfilePage) return;
     isEditMode = true;
     editBtn.style.display = 'none';
     saveCancelControls.style.display = 'flex';
@@ -774,56 +835,56 @@ function handleDrop(e) {
 }
 
 async function saveAlbumOrder() {
-    const user_id = await getUserIdFromSession();
+    const user_id = currentProfileUserId || await getUserIdFromSession();
     if (!user_id) {
         console.error('user_id не найден в cookie!');
         return;
     }
 
+    // Удаления и порядок уходят одним запросом: при сбое коллекция в базе остаётся прежней
+    const layout = {
+        deleted_album_ids: [...pendingDeletes],
+        order: Array.from(albumList.children).map(li => li.dataset.albumId),
+    };
+
     try {
-        for (const album_id of [...pendingDeletes]) {
-            await deleteAlbumFromServer(album_id);
-            pendingDeletes.delete(album_id);
+        const url = `${serverAddress}api/users/${user_id}/albums/layout/`;
+        const response = await fetch(url, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            credentials: 'include',
+            body: JSON.stringify(layout),
+        });
+        if (!response.ok) {
+            throw new Error(`Ошибка: ${response.status}`);
         }
+        pendingDeletes.clear();
+    } catch (error) {
+        console.error('Ошибка при сохранении изменений:', error);
+        await loadUserAlbums(user_id);
+        alert('Не удалось сохранить изменения');
+        return;
+    }
 
-        const newOrder = Array.from(albumList.children).map((li, index) => ({
-            album_id: li.dataset.albumId,
-            order: index
-        }));
-
-        if (newOrder.length > 0) {
-            const requestOptions = {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(newOrder),
-            };
-            const url = `${serverAddress}api/users/${user_id}/albums/reorder/`;
-            const response = await fetch(url, requestOptions);
-            if (!response.ok) {
-                throw new Error(`Ошибка: ${response.status}`);
-            }
-        }
-
-        if (pendingAvatarFile) {
+    if (pendingAvatarFile) {
+        try {
             const data = await uploadAvatar(pendingAvatarFile);
             const avatarImg = document.getElementById('user-avatar');
             if (avatarImg && data && data.avatar_url) {
                 avatarImg.src = `${data.avatar_url}?t=${Date.now()}`;
             }
+        } catch (error) {
+            console.error('Ошибка при загрузке аватара:', error);
+            alert('Альбомы сохранены, но аватар загрузить не удалось');
         }
-
-        if (pendingAvatarObjectUrl) {
-            URL.revokeObjectURL(pendingAvatarObjectUrl);
-            pendingAvatarObjectUrl = null;
-        }
-        pendingAvatarFile = null;
-        disableEditMode();
-    } catch (error) {
-        console.error('Ошибка при сохранении изменений:', error);
-        alert('Не удалось сохранить изменения');
     }
+
+    if (pendingAvatarObjectUrl) {
+        URL.revokeObjectURL(pendingAvatarObjectUrl);
+        pendingAvatarObjectUrl = null;
+    }
+    pendingAvatarFile = null;
+    disableEditMode();
 }
 
 function cancelEdit() {

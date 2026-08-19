@@ -4,10 +4,20 @@ from src.cdn.data_cdn import data_asset_public_url, html_inject_cdn_head
 from src.cdn.s3_avatars import coalesce_avatar_url
 
 
-def render_user_page(username: str, avatar_url: str | None = None) -> str:
+def render_user_page(
+    username: str,
+    avatar_url: str | None = None,
+    *,
+    is_owner: bool = False,
+    is_authenticated: bool = False,
+) -> str:
     avatar_url = escape(coalesce_avatar_url(avatar_url), quote=True)
     logo_url = escape(data_asset_public_url("other/VVlogo_solo_cr.png"), quote=True)
     username = escape(username, quote=True)
+    profile_path = f"/user/{username}"
+    profile_path = escape(profile_path, quote=True)
+    owner_flag = "true" if is_owner else "false"
+    auth_flag = "true" if is_authenticated else "false"
 
     html_content = f"""
     
@@ -17,6 +27,10 @@ def render_user_page(username: str, avatar_url: str | None = None) -> str:
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <meta name="page-type" content="user">
+        <meta name="profile-username" content="{username}">
+        <meta name="profile-path" content="{profile_path}">
+        <meta name="is-owner" content="{owner_flag}">
+        <meta name="is-authenticated" content="{auth_flag}">
         <title>VinylVault</title>
         <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
         {html_inject_cdn_head()}
@@ -35,7 +49,7 @@ def render_user_page(username: str, avatar_url: str | None = None) -> str:
             </a>
             <div class="collapse navbar-collapse justify-content-end" id="mynavbar">
                 <form class="d-flex">
-                    <button id="logout-btn" class="btn btn-outline-danger" type="button">Log Out</button>
+                    <button id="logout-btn" class="btn btn-outline-danger" type="button" style="display: {'inline-block' if is_authenticated else 'none'};">Log Out</button>
                 </form>
             </div>
         </div>
@@ -59,7 +73,8 @@ def render_user_page(username: str, avatar_url: str | None = None) -> str:
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="text-center text-danger" style="font-family: Barlow;">Top Albums</h2>
             <div class="edit-controls">
-                <button id="edit-btn" class="btn ms-2 btn-outline-secondary" style="white-space: nowrap; min-width: 80px;">Edit</button>
+                <button id="share-profile-btn" class="btn ms-2 btn-outline-light" type="button" style="white-space: nowrap; min-width: 80px;">Share</button>
+                <button id="edit-btn" class="btn ms-2 btn-outline-secondary" style="white-space: nowrap; min-width: 80px; display: {'inline-block' if is_owner else 'none'};">Edit</button>
                 <div id="save-cancel-controls" style="display: none;">
                     <button id="save-btn" class="btn btn-success" style="white-space: nowrap; min-width: 80px;">Save</button>
                     <button id="cancel-btn" class="btn btn-secondary ms-2" style="white-space: nowrap; min-width: 80px;">Cancel</button>
@@ -70,12 +85,12 @@ def render_user_page(username: str, avatar_url: str | None = None) -> str:
         <div class="mb-3 position-relative">
             <div class="d-flex align-items-center">
                 <div class="position-relative flex-grow-1">
-                    <input type="text" id="album-search" class="form-control" placeholder="Название альбома" />
+                    <input type="text" id="album-search" class="form-control" placeholder="Название альбома" {'' if is_owner else 'disabled'} />
                     <div id="lfm_search-dropdown-menu" class="dropdown-menu w-100" style="display: none; position: absolute; top: 100%; left: 0;">
                         <!-- Варианты для поиска появятся здесь -->
                     </div>
                 </div>
-                <button id="search-album-btn" class="btn ms-2 text-bg-danger" style="white-space: nowrap; min-width: 80px;">Explore</button>
+                <button id="search-album-btn" class="btn ms-2 text-bg-danger" style="white-space: nowrap; min-width: 80px; display: {'inline-block' if is_owner else 'none'};">Explore</button>
             </div>
         </div>
 

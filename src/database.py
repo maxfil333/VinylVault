@@ -35,7 +35,6 @@ async def mongo_connect(host: str | None = None) -> AsyncIOMotorClient:
 
 
 async def get_db(client: AsyncIOMotorClient, db_name: str) -> AsyncIOMotorDatabase:
-    logger.info("")
     db = client[db_name]
     return db
 
@@ -61,6 +60,7 @@ async def init_database():
             )
             VINYL_VAULT_DB = await get_db(MONGO_CLIENT, 'VinylVault')
             await VINYL_VAULT_DB["users_collection"].create_index("username", unique=True)
+            await VINYL_VAULT_DB["users_collection"].create_index("email", unique=True)
             await VINYL_VAULT_DB["session_cookies_collection"].create_index(
                 "login_time",
                 expireAfterSeconds=cfg.SESSION_TTL_SEC,
@@ -79,6 +79,18 @@ async def init_database():
     raise last_error or TimeoutError("MongoDB недоступен")
 
 
+async def ping_database() -> bool:
+    """ Проверка живого соединения с MongoDB для healthcheck """
+    if MONGO_CLIENT is None:
+        return False
+    try:
+        await asyncio.wait_for(MONGO_CLIENT.admin.command("ping"), timeout=MONGO_PING_TIMEOUT_SEC)
+        return True
+    except Exception as exc:
+        logger.warning(f"MongoDB не отвечает на ping: {exc}")
+        return False
+
+
 async def close_database():
     """Закрытие подключения к MongoDB"""
     global MONGO_CLIENT
@@ -88,12 +100,10 @@ async def close_database():
 
 
 async def add_user(collection: AsyncIOMotorCollection, user: VV_User) -> InsertOneResult:
-    logger.info("")
     return await collection.insert_one(user.model_dump(by_alias=True))
 
 
 async def add_session(collection: AsyncIOMotorCollection, session_id: str, user: VV_User) -> InsertOneResult:
-    logger.info("")
     return await collection.insert_one(
         VV_Session(
             session_id=session_id,
@@ -105,25 +115,21 @@ async def add_session(collection: AsyncIOMotorCollection, session_id: str, user:
 
 
 async def is_in_collection(field: str, value: str, collection: AsyncIOMotorCollection) -> bool:
-    logger.info("")
     return bool(await collection.find_one({field: value}))
 
 
 async def _get_collection(db: AsyncIOMotorDatabase, collection_name: str) -> AsyncIOMotorCollection:
-    logger.info("")
     collection = db[collection_name]
     return collection
 
 
 async def get_users_collection() -> AsyncIOMotorCollection:
-    logger.info("")
     if VINYL_VAULT_DB is None:
         raise RuntimeError("База данных не инициализирована. Вызовите init_database() сначала.")
     return await _get_collection(VINYL_VAULT_DB, 'users_collection')
 
 
 async def get_session_cookies_collection() -> AsyncIOMotorCollection:
-    logger.info("")
     if VINYL_VAULT_DB is None:
         raise RuntimeError("База данных не инициализирована. Вызовите init_database() сначала.")
     return await _get_collection(VINYL_VAULT_DB, 'session_cookies_collection')

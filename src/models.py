@@ -35,6 +35,12 @@ class SearchResults(BaseModel):
     artist_top_albums: list[VV_Album] = Field(default_factory=list)
 
 
+class AlbumsLayout(BaseModel):
+    """ Результат редактирования коллекции: что удалить и в каком порядке оставить. """
+    deleted_album_ids: list[str] = Field(default_factory=list)
+    order: list[str] = Field(default_factory=list)  # album_id в нужном порядке
+
+
 if __name__ == '__main__':
     user = VV_User(username='user', password='pass', email='abcd@gmail.com')
     print(user)

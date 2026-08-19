@@ -11,6 +11,8 @@ __pycache__/
 venv/
 env/
 .env
+.git/
+.gitignore
 .idea/
 .vscode/
 .cursor/
@@ -19,5 +21,9 @@ build/
 *.egg-info/
 *.log
 *.pdf
+album_covers/
+scripts/
+deploy/
+backups/
 
 __*

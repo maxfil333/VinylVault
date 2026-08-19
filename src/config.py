@@ -27,6 +27,21 @@ class Config(BaseSettings):
     # Срок сессии: TTL в Mongo по login_time и Max-Age cookie.
     SESSION_TTL_SEC: int = 14 * 24 * 60 * 60
 
+    APP_HOST: str = "0.0.0.0"
+    APP_PORT: int = 8000
+    # За HTTPS-прокси: включить COOKIE_SECURE и разрешить прокси присылать X-Forwarded-*.
+    # Схему запроса брать из заголовков нельзя, пока прокси не в списке доверенных.
+    COOKIE_SECURE: bool = False
+    FORWARDED_ALLOW_IPS: str = "127.0.0.1"
+    ENABLE_DOCS: bool = False
+
+    SEARCH_CACHE_TTL_SEC: int = 300
+
+    LOG_LEVEL: str = "INFO"
+    LOG_DIR: Path = BASE_DIR / "__logs"
+    LOG_ROTATION: str = "5 MB"
+    LOG_RETENTION: str = "14 days"
+
 
 
 cfg = Config()

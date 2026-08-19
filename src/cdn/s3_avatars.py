@@ -85,6 +85,12 @@ async def _delete_user_avatar_variants(client: Any, user_id: str) -> None:
             pass
 
 
+async def delete_user_avatar(user_id: str) -> None:
+    """Удаляет все варианты аватара пользователя из бакета."""
+    async with s3_client() as client:
+        await _delete_user_avatar_variants(client, user_id)
+
+
 async def upload_user_avatar_to_s3(user_id: str, file_bytes: bytes, content_type: str, ext: str) -> str:
     """Удаляет прежние объекты аватара пользователя, загружает новый, возвращает публичный URL."""
     key = f"{USER_AVATAR_PREFIX}/{user_id}{ext}"
