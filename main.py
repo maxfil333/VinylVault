@@ -4,8 +4,7 @@ import uvicorn
 import asyncio
 from contextlib import asynccontextmanager
 from typing import Annotated, Optional
-from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, UploadFile, File
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, Depends, HTTPException, Form, Cookie, status, UploadFile, File, Request
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorCollection
@@ -44,14 +43,6 @@ app = FastAPI(lifespan=lifespan)
 register_exception_handlers(app)
 
 # uvicorn src.main:app --reload
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # Разрешить все источники (можно ограничить)
-    allow_credentials=True,
-    allow_methods=["*"],  # Разрешить все методы
-    allow_headers=["*"],  # Разрешить все заголовки
-)
 
 users_collection_dep = Annotated[AsyncIOMotorCollection, Depends(get_users_collection)]
 session_cookies_dep = Annotated[AsyncIOMotorCollection, Depends(get_session_cookies_collection)]
@@ -92,7 +83,11 @@ async def get_session_data(
     return session or {}
 
 
-async def _cookie_create_and_set(session_cookies: AsyncIOMotorCollection, user: VV_User) -> Response:
+async def _cookie_create_and_set(
+    session_cookies: AsyncIOMotorCollection,
+    user: VV_User,
+    request: Request,
+) -> Response:
     """ Создаем сессию и устанавливаем cookie, чтобы /me открыл страницу текущего пользователя """
     session_id = generate_session_id()
     await add_session(collection=session_cookies, session_id=session_id, user=user)
@@ -102,13 +97,15 @@ async def _cookie_create_and_set(session_cookies: AsyncIOMotorCollection, user: 
         value=session_id,
         httponly=True,
         max_age=cfg.SESSION_TTL_SEC,
+        samesite="lax",
+        secure=request.url.scheme == "https",
     )
     logger.debug("Установлена кука сессии")
     return response
 
 
 @app.post("/register", response_class=HTMLResponse)
-async def register(users_collection: users_collection_dep, session_cookies: session_cookies_dep,
+async def register(request: Request, users_collection: users_collection_dep, session_cookies: session_cookies_dep,
                    username: str = Form(...), password: str = Form(...), email: EmailStr = Form(...)):
     """ Обработчик регистрации. Принимает данные из HTML-формы и добавляет нового пользователя в базу данных. """
     logger.info("")
@@ -125,12 +122,12 @@ async def register(users_collection: users_collection_dep, session_cookies: sess
     # Генерируем страницу для нового пользователя (имя файла совпадает с VV_User.user_id)
     await generate_user_page(user_id=user.user_id, username=username)
     # Создаем сессию и устанавливаем cookie, чтобы /me открыл страницу текущего пользователя
-    response = await _cookie_create_and_set(session_cookies=session_cookies, user=user)
+    response = await _cookie_create_and_set(session_cookies=session_cookies, user=user, request=request)
     return response
 
 
 @app.post("/login")
-async def login(users_collection: users_collection_dep, session_cookies: session_cookies_dep,
+async def login(request: Request, users_collection: users_collection_dep, session_cookies: session_cookies_dep,
                 username: str = Form(...), password: str = Form(...)):
     """ Обработчик логина. Принимает данные из HTML-формы и возвращает пользователя из базы данных. """
     logger.info("")
@@ -141,12 +138,12 @@ async def login(users_collection: users_collection_dep, session_cookies: session
             return RedirectResponse(url="/login?error=invalid", status_code=303)
         raise
     # Создаем сессию и устанавливаем cookie, чтобы /me открыл страницу текущего пользователя
-    response = await _cookie_create_and_set(session_cookies=session_cookies, user=user)
+    response = await _cookie_create_and_set(session_cookies=session_cookies, user=user, request=request)
     return response
 
 
 @app.post("/logout")
-async def logout(session_cookies: session_cookies_dep,
+async def logout(request: Request, session_cookies: session_cookies_dep,
                  session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None)):
     """ Выход пользователя: удаляет сессию из базы данных и очищает cookie """
     logger.info("")
@@ -157,7 +154,12 @@ async def logout(session_cookies: session_cookies_dep,
 
     # Создаем ответ с редиректом на welcome и очищаем cookie
     response = RedirectResponse(url="/welcome", status_code=303)
-    response.delete_cookie(key=SESSION_COOKIES_KEY, httponly=True)
+    response.delete_cookie(
+        key=SESSION_COOKIES_KEY,
+        httponly=True,
+        samesite="lax",
+        secure=request.url.scheme == "https",
+    )
     return response
 
 
