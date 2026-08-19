@@ -10,6 +10,9 @@ from fastapi.staticfiles import StaticFiles
 from motor.motor_asyncio import AsyncIOMotorCollection
 from pydantic import EmailStr
 from pymongo.errors import DuplicateKeyError
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+from slowapi.util import get_remote_address
 
 from src.config import cfg
 from src.models import VV_Album, VV_User, SearchResults
@@ -41,6 +44,9 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 register_exception_handlers(app)
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # uvicorn src.main:app --reload
 
@@ -239,7 +245,8 @@ async def vv_data_theme_css():
 # ____________________________________ API ____________________________________
 
 @app.get("/api/search/albums/{album_name}", response_model=list[VV_Album])
-async def search_album(album_name: str):
+@limiter.limit("20/minute")
+async def search_album(request: Request, album_name: str):
     """ Возвращает список найденных альбомов по запросу пользователя (legacy для фронта) """
     logger.info("")
     search_results = await album_search(album_name)
@@ -256,7 +263,8 @@ async def search_album(album_name: str):
 
 
 @app.get("/api/search/mixed/{query}", response_model=SearchResults)
-async def search_mixed(query: str):
+@limiter.limit("30/minute")
+async def search_mixed(request: Request, query: str):
     """ Выполняет параллельный поиск: по имени альбома и по топ-альбомам исполнителя. Возвращает сгруппировано. """
     logger.info("")
 
