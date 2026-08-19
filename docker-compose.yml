@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     image: vinyl_fast_api
+    restart: unless-stopped
     depends_on:
       mongo:
         condition: service_healthy
@@ -16,6 +17,7 @@ services:
     ports:
       - "8000:8000"
 
+  # 27017
   mongo:
     image: mongo:8
     restart: unless-stopped
@@ -23,8 +25,6 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: "${MONGO_ROOT_USER}"
       MONGO_INITDB_ROOT_PASSWORD: "${MONGO_ROOT_PASSWORD}"
-    ports:
-      - "27017:27017"
     volumes:
       - mongo_data:/data/db
     healthcheck:
@@ -45,12 +45,13 @@ services:
 
   mongo-express:
     image: mongo-express
+    profiles: ["dev"]
     restart: unless-stopped
     depends_on:
       mongo:
         condition: service_healthy
     ports:
-      - "8081:8081"
+      - "127.0.0.1:8081:8081"
     environment:
       ME_CONFIG_MONGODB_URL: "mongodb://${MONGO_ROOT_USER}:${MONGO_ROOT_PASSWORD}@mongo:27017/?authSource=admin&directConnection=true"
       ME_CONFIG_SITE_BASEURL: /mongo
