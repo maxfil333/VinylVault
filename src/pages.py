@@ -49,6 +49,7 @@ def render_user_page(
             </a>
             <div class="navbar-collapse justify-content-end" id="mynavbar">
                 <form class="d-flex">
+                    <a id="my-page-btn" class="btn btn-outline-info me-2" href="/me" style="display: {'inline-block' if is_authenticated else 'none'};">ME</a>
                     <button id="logout-btn" class="btn btn-outline-danger" type="button" style="display: {'inline-block' if is_authenticated else 'none'};">Log Out</button>
                 </form>
             </div>
@@ -73,6 +74,7 @@ def render_user_page(
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h2 class="text-center text-danger" style="font-family: Barlow;">Top Albums</h2>
             <div class="edit-controls">
+                <a id="random-user-btn" class="btn ms-2 btn-outline-info" href="/random-user" style="white-space: nowrap; min-width: 80px;">Random</a>
                 <button id="share-profile-btn" class="btn ms-2 btn-outline-light" type="button" style="white-space: nowrap; min-width: 80px;">Share</button>
                 <button id="edit-btn" class="btn ms-2 btn-outline-secondary" style="white-space: nowrap; min-width: 80px; display: {'inline-block' if is_owner else 'none'};">Edit</button>
                 <div id="save-cancel-controls" style="display: none;">

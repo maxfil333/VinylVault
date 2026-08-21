@@ -13,6 +13,11 @@ const editBtn = document.getElementById('edit-btn');
 const saveBtn = document.getElementById('save-btn');
 const cancelBtn = document.getElementById('cancel-btn');
 const saveCancelControls = document.getElementById('save-cancel-controls');
+// Ссылки уводят со страницы, поэтому в режиме правки их скрываем — иначе можно потерять несохранённое
+const leaveProfileLinks = [
+    document.getElementById('random-user-btn'),
+    document.getElementById('my-page-btn'),
+].filter(Boolean);
 
 // Переменные для режима редактирования
 let isEditMode = false;
@@ -663,6 +668,9 @@ function enableEditMode() {
     isEditMode = true;
     editBtn.style.display = 'none';
     saveCancelControls.style.display = 'flex';
+    leaveProfileLinks.forEach(link => {
+        link.style.display = 'none';
+    });
     pendingDeletes = new Set();
     pendingAvatarFile = null;
     const avatarImg = document.getElementById('user-avatar');
@@ -692,6 +700,9 @@ function disableEditMode() {
     isEditMode = false;
     editBtn.style.display = 'block';
     saveCancelControls.style.display = 'none';
+    leaveProfileLinks.forEach(link => {
+        link.style.display = 'inline-block';
+    });
     
     // Убираем класс edit-mode
     albumList.classList.remove('edit-mode');

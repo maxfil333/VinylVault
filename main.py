@@ -21,7 +21,7 @@ from src.models import VV_Album, VV_User, SearchResults, AlbumsLayout
 from src.handlers import register_exception_handlers
 from src.lastfm_api.album_info import album_search, album_getinfo
 from src.lastfm_api.artist_info import artist_top_albums
-from src.database import get_users_collection, add_user, is_in_collection
+from src.database import get_users_collection, add_user, is_in_collection, pick_random_username
 from src.database import get_session_cookies_collection, add_session, init_database, close_database, ping_database
 from src.utils.utils import load_html
 from src.utils.logger import logger
@@ -223,6 +223,28 @@ async def my_page(
     username = session_data.get("username")
     if not username:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="not authenticated")
+
+    return RedirectResponse(url=_build_profile_path(username), status_code=303)
+
+
+@app.get("/random-user")
+@limiter.limit("30/minute")
+async def random_user_page(
+    request: Request,
+    users_collection: users_collection_dep,
+    session_cookies_collection: session_cookies_dep,
+    session_id: Optional[str] = Cookie(alias=SESSION_COOKIES_KEY, default=None),
+):
+    """ Редирект на профиль случайного пользователя (свой профиль пропускаем). """
+    exclude_username = None
+    if session_id:
+        session = await session_cookies_collection.find_one({'session_id': session_id}) or {}
+        exclude_username = session.get("username")
+
+    username = await pick_random_username(users_collection, exclude_username=exclude_username)
+    if not username:
+        logger.debug("Случайный пользователь не найден")
+        return RedirectResponse(url="/welcome", status_code=303)
 
     return RedirectResponse(url=_build_profile_path(username), status_code=303)
 

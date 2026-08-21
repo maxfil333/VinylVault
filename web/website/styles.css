@@ -171,6 +171,13 @@ body.login-page::before {
 }
 
 @media (max-width: 575.98px) {
+    /* Кнопок в блоке несколько, поэтому на узком экране переносим их вместо горизонтального выхода за контейнер */
+    .edit-controls {
+        flex-wrap: wrap;
+        justify-content: flex-end;
+        gap: 6px;
+    }
+
     .navbar .btn {
         --bs-btn-padding-x: 0.5rem;
         --bs-btn-padding-y: 0.25rem;

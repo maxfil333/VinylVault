@@ -118,6 +118,27 @@ async def is_in_collection(field: str, value: str, collection: AsyncIOMotorColle
     return bool(await collection.find_one({field: value}))
 
 
+async def pick_random_username(
+    collection: AsyncIOMotorCollection,
+    exclude_username: str | None = None,
+) -> Optional[str]:
+    """ Случайный username: сначала среди профилей с альбомами, иначе среди любых. """
+    base: dict = {}
+    if exclude_username:
+        base["username"] = {"$ne": exclude_username}
+
+    for match in ({**base, "albums.0": {"$exists": True}}, base):
+        pipeline = [
+            {"$match": match},
+            {"$sample": {"size": 1}},
+            {"$project": {"_id": 0, "username": 1}},
+        ]
+        docs = await collection.aggregate(pipeline).to_list(length=1)
+        if docs and docs[0].get("username"):
+            return docs[0]["username"]
+    return None
+
+
 async def _get_collection(db: AsyncIOMotorDatabase, collection_name: str) -> AsyncIOMotorCollection:
     collection = db[collection_name]
     return collection
