@@ -12,17 +12,17 @@
 <body>
 
 
-<nav class="navbar navbar-expand-sm navbar-dark bg-dark fixed-top">
-	<div class="container-fluid">
+<nav class="navbar navbar-expand navbar-dark bg-dark fixed-top">
+	<div class="container-fluid flex-nowrap">
 		<a class="navbar-brand" href="#" style="padding-top: 0">
-            <img src="static/data/other/VVlogo_solo_cr.png" alt="VivylVault Logo" style="width:200px; height:30px;" class="rounded-3">
+            <img src="/static/data/other/VVlogo_solo_cr.png" alt="VivylVault Logo" class="navbar-logo rounded-3">
         </a>
-		<div class="collapse navbar-collapse justify-content-end" id="mynavbar">
+		<div class="navbar-collapse justify-content-end" id="mynavbar">
 			<form class="d-flex">
 				<!-- Кнопки для неавторизованных пользователей -->
 				<div id="auth-buttons" style="display: none;">
 					<a class="btn btn-danger me-2" type="button" href="/login">Log In</a>
-					<a class="btn btn-light me-2" type="button" href="/register">SIGN UP</a>
+					<a class="btn btn-light" type="button" href="/register">SIGN UP</a>
 				</div>
 				<!-- Кнопки для авторизованных пользователей -->
 				<div id="user-buttons" style="display: none;">
@@ -35,7 +35,7 @@
 </nav>
 
 
-<div class="d-flex justify-content-center align-items-center vh-100">
+<div class="d-flex justify-content-center align-items-center vv-full-screen">
     <div class="container">
         <h2 class="text-center text-danger no-select" style="font-family: Barlow;">Let's start</h2>
         <form action="/explore" method="post">

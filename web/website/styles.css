@@ -1,10 +1,7 @@
 body::before {
     content: "";
     position: fixed;
-    top: 50px; /* Сдвиг псевдоэлемента вниз */
-    left: 0;
-    width: 100%;
-    height: 100%;
+    inset: 0; /* Навбар непрозрачный, поэтому фон тянем на весь экран без щели снизу */
     background-image: var(--vv-page-bg, url('data/backgrounds/back1.jpg'));
     background-size: cover; /* Масштабирование изображения */
     background-repeat: no-repeat; /* Избегать повторов изображения */
@@ -165,4 +162,33 @@ body.login-page::before {
     box-shadow: 0 0 20px rgba(255, 107, 107, 0.5);
 }
 
-/*
+/* Логотип сжимается, чтобы кнопки навбара всегда влезали в одну строку */
+.navbar-logo {
+    width: 200px;
+    max-width: 40vw;
+    height: auto;
+    aspect-ratio: 200 / 30;
+}
+
+@media (max-width: 575.98px) {
+    .navbar .btn {
+        --bs-btn-padding-x: 0.5rem;
+        --bs-btn-padding-y: 0.25rem;
+        --bs-btn-font-size: 0.8125rem;
+        white-space: nowrap;
+    }
+}
+
+/* 100vh в iOS Safari выше видимой области, поэтому центрируемый блок
+   уезжает под адресную строку. svh считает панели браузера. */
+.vv-full-screen {
+    min-height: 100vh;
+    padding-top: 4.5rem;
+    padding-bottom: 1.5rem;
+}
+
+@supports (min-height: 100svh) {
+    .vv-full-screen {
+        min-height: 100svh;
+    }
+}

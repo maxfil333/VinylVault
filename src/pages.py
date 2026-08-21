@@ -42,12 +42,12 @@ def render_user_page(
     
     <!-- Шапка страницы -->
     <div class="container" style="height: 54px">
-    <nav class="navbar navbar-expand-sm navbar-dark bg-dark fixed-top">
-        <div class="container-fluid">
+    <nav class="navbar navbar-expand navbar-dark bg-dark fixed-top">
+        <div class="container-fluid flex-nowrap">
             <a class="navbar-brand" href="/welcome" style="padding-top: 0">
-                <img src="{logo_url}" alt="VivylVault Logo" style="width:200px; height:30px;" class="rounded-3">
+                <img src="{logo_url}" alt="VivylVault Logo" class="navbar-logo rounded-3">
             </a>
-            <div class="collapse navbar-collapse justify-content-end" id="mynavbar">
+            <div class="navbar-collapse justify-content-end" id="mynavbar">
                 <form class="d-flex">
                     <button id="logout-btn" class="btn btn-outline-danger" type="button" style="display: {'inline-block' if is_authenticated else 'none'};">Log Out</button>
                 </form>
