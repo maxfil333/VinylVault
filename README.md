@@ -1,4 +1,6 @@
-![](https://github.com/maxfil333/VinylVault/blob/master/web/website/data/other/VVlogo_solo_cr.png)
+# VinylVault
+
+[vinylvault.ru](https://vinylvault.ru)
 
 VinylVault — коллекция любимых альбомов: поиск по Last.fm, личная страница с обложками и порядком альбомов, аватар в S3/CDN.
 
